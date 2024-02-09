@@ -2,11 +2,11 @@ from django.db import models
 
 class Song(models.Model):
     s_yt_id = models.CharField(max_length=11, unique=True)  # Youtube ID
-    s_artist = models.CharField(max_length=99)
+    s_artist = models.CharField(max_length=99, blank=True, null=True)
     s_title = models.CharField(max_length=99)
     s_album = models.CharField(max_length=99, blank=True, null=True)
-    s_released = models.IntegerField()
-    s_discovered = models.IntegerField()
+    s_released = models.IntegerField(blank=True, null=True)
+    s_discovered = models.CharField(max_length=20, blank=True, null=True)
     s_comment = models.TextField(blank=True, null=True)
     s_last_updated = models.DateTimeField(auto_now=True)
     s_created_on = models.DateTimeField(auto_now_add=True)
