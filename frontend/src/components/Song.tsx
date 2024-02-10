@@ -32,7 +32,12 @@ const SongComponent: React.FC<SongProps> = ({ song }) => {
   };
 
   return (
-    <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <tr ref={setNodeRef} style={style}>
+      <td>
+        <div className="drag-handle" {...attributes} {...listeners}>
+          &equiv; {/* ≡ */}
+        </div>
+      </td>
       <td>{song.r_rank}</td>
       <td>
         <a

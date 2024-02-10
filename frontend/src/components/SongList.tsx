@@ -32,12 +32,18 @@ const SongList: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
+        // delay: 0,
         distance: 0,
       },
     })
   );
 
+  const handleDragStart = (event: any) => {
+    document.body.style.cursor = "grabbing";
+  };
+
   const handleDragEnd = (event: any) => {
+    document.body.style.cursor = "";
     const { active, over } = event;
     if (active != null && over != null) {
       if (active.id !== over.id) {
@@ -57,6 +63,7 @@ const SongList: React.FC = () => {
       <table>
         <thead>
           <tr>
+            <th></th>
             <th>#</th>
             <th>Link</th>
             <th>Artysta</th>
@@ -70,6 +77,7 @@ const SongList: React.FC = () => {
         <tbody>
           <DndContext
             sensors={sensors}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             collisionDetection={closestCenter}
             modifiers={[
