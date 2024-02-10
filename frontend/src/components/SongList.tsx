@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import SongComponent, { Song } from './Song';
+import React, { useEffect, useState } from "react";
+import SongComponent, { Song } from "./Song";
 
 const SongList: React.FC = () => {
   const [songs, setSongs] = useState<Song[]>([]);
 
   useEffect(() => {
     fetch(`${process.env.REACT_APP_API_URL}songs/`)
-      .then(response => response.json())
-      .then(data => setSongs(data))
-      .catch(error => console.error("Error getting songs:", error));
+      .then((response) => response.json())
+      .then((data) => setSongs(data))
+      .catch((error) => console.error("Error getting songs:", error));
   }, []);
 
   return (
@@ -27,7 +27,7 @@ const SongList: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {songs.map(song => (
+          {songs.map((song) => (
             <SongComponent key={song.id} song={song} />
           ))}
         </tbody>
