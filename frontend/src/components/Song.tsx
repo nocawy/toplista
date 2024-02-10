@@ -1,4 +1,6 @@
 import React from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export interface Song {
   id: number;
@@ -19,8 +21,18 @@ interface SongProps {
 }
 
 const SongComponent: React.FC<SongProps> = ({ song }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: song.id,
+    });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
+
   return (
-    <tr>
+    <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <td>{song.r_rank}</td>
       <td>
         <a
