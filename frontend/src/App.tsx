@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 
-import SongList from './SongList';
+import SongList from './components/SongList';
 
 function App() {
   return (
