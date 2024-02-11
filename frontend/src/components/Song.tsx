@@ -18,9 +18,10 @@ export interface Song {
 
 interface SongProps {
   song: Song;
+  index: number; // row number
 }
 
-const SongComponent: React.FC<SongProps> = ({ song }) => {
+const SongComponent: React.FC<SongProps> = ({ song, index }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: song.id,
@@ -38,7 +39,7 @@ const SongComponent: React.FC<SongProps> = ({ song }) => {
           &equiv; {/* ≡ */}
         </div>
       </td>
-      <td>{song.r_rank}</td>
+      <td>{index}</td>
       <td>
         <a
           href={`https://www.youtube.com/watch?v=${song.s_yt_id}`}

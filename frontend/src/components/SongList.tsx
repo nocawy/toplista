@@ -90,8 +90,8 @@ const SongList: React.FC = () => {
               items={songs.map((song) => song.id)}
               strategy={verticalListSortingStrategy}
             >
-              {songs.map((song) => (
-                <SongComponent key={song.id} song={song} />
+              {songs.map((song, index) => (
+                <SongComponent key={song.id} song={song} index={index + 1} /> // pass index+1 so that numbering starts with 1
               ))}
             </SortableContext>
           </DndContext>
