@@ -13,6 +13,30 @@
   color: white;
 }
 
+/* Table and rows, zebra-formatting */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1px 0px;
+}
+
+th {
+  background-color: white ;
+}
+
+th, td {
+  padding: 2px 2px;
+}  
+
+td:first-child {
+  padding-left: 6px;
+}  
+
+tr:nth-child(odd) {
+  background-color: #f3f3f3;
+}
+
+/* Drag handle */
 .drag-handle {
   cursor: grab;
 }
