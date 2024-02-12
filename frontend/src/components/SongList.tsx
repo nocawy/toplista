@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 
 import SongComponent, { Song } from "./Song";
+import { updateSongRank } from "../api/songService";
 
 const SongList: React.FC = () => {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -52,6 +53,7 @@ const SongList: React.FC = () => {
           const newIndex = songs.findIndex((song) => song.id === over.id);
           // const oldIndex = songs.indexOf(active.id);
           // const newIndex = songs.indexOf(over.id);
+          updateSongRank({ songId: active.id, newRank: newIndex + 1 });
           return arrayMove(songs, oldIndex, newIndex);
         });
       }
