@@ -26,6 +26,11 @@ SECRET_KEY = 'django-insecure-cm3r=2mqdk9_59zzr-t2wr4-1zu03g-l9q8lsgcx^ngur+@c@8
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', 'nocawy.pl']
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://nocawy.pl",
+]
 
 
 # Application definition
@@ -38,10 +43,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'api',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',    # needs to be on top of the list, per cors-headers documentation
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
