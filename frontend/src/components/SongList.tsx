@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -20,16 +19,12 @@ import {
 import SongComponent, { Song } from "./Song";
 import { updateSongRank } from "../api/songService";
 
-const SongList: React.FC = () => {
-  const [songs, setSongs] = useState<Song[]>([]);
+interface SongListProps {
+  songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+}
 
-  useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}songs/`)
-      .then((response) => response.json())
-      .then((data) => setSongs(data))
-      .catch((error) => console.error("Error getting songs:", error));
-  }, []);
-
+const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

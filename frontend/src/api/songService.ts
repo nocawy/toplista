@@ -1,3 +1,19 @@
+import { Song } from "../components/Song";
+
+export const fetchSongs = async (): Promise<Song[]> => {
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}songs/`);
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const songs: Song[] = await response.json();
+    return songs;
+  } catch (error) {
+    console.error("Error getting songs:", error);
+    throw error;
+  }
+};
+
 interface SongUpdate {
   songId: number;
   newRank: number;
