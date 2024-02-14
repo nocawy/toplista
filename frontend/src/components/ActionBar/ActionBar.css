@@ -1,0 +1,27 @@
+.ActionBar {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: #474c57;
+  color: white;
+}
+
+.nav-item {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-link:hover,
+.nav-link:active {
+  color: #4caf50;
+}
+
+.nav-link div {
+  line-height: 1.2;
+}
