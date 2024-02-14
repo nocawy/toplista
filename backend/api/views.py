@@ -65,3 +65,50 @@ def update_rank(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+import os
+from django.core.management import call_command
+from django.http import JsonResponse
+
+class UploadCSV(APIView):
+    """
+    A view that handles CSV file uploads for importing songs into the database via POST requests.
+
+    This class uses the MultiPartParser and FormParser to handle file uploads
+    in multipart/form-data format. It expects a POST request with a file named 'file'.
+    Upon receiving the file, it checks the file size.
+    If the size is within limits, it saves the file to a backup directory and calls
+    the 'import_songs' Django management command to import the songs from the CSV into
+    the database.
+
+    If the import is successful, it returns a JSON response with a status of 'success'.
+    If an error occurs during the import process, it returns a JSON response with a status
+    of 'error' and an error message. If no file is provided or the file is too large,
+    it returns an error message accordingly.
+    """
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        csv_file = request.FILES.get('file')
+        if csv_file:
+            if csv_file.size > 1048576:  # 1MB
+                return JsonResponse({'error': 'The file is too large. The maximum size is 1MB.'}, status=400)
+            backup_dir = '.backup'
+            os.makedirs(backup_dir, exist_ok=True)  # Ensure the backup directory exists
+            file_path = os.path.join(backup_dir, "songs_import.csv")
+            
+            with open(file_path, 'wb+') as destination:
+                for chunk in csv_file.chunks():
+                    destination.write(chunk)
+            
+            try:
+                call_command('import_songs', file_path)
+                return JsonResponse({'status': 'success'}, status=200)
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+        else:
+            return JsonResponse({'status': 'error', 'message': 'No file provided'}, status=400)
