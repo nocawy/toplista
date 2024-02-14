@@ -42,11 +42,12 @@ const SongComponent: React.FC<SongProps> = ({ song, index }) => {
       <td>{index}</td>
       <td>
         <a
+          className="play-link"
           href={`https://www.youtube.com/watch?v=${song.s_yt_id}`}
           target="_blank"
           rel="noopener noreferrer"
         >
-          play
+          &#x23F5; {/* ⏵,  &#9654; &#x25B6; ▶ */}
         </a>
       </td>
       <td>{song.s_artist}</td>
