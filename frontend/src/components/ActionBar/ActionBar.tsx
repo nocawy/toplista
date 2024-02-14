@@ -2,6 +2,7 @@ import "./ActionBar.css";
 import { Song } from "../Song";
 import PlayTop50 from "./PlayTop50";
 import useTop50Link from "../../hooks/useTop50Link";
+import ImportComponent from "./Import";
 
 interface ActionBarProps {
   songs: Song[];
@@ -16,6 +17,11 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
       {/* TODO: play random 50 */}
       <div className="nav-item"></div>
       {/* TODO: import/export */}
+      <div>
+        CSV
+        <br />
+        <ImportComponent />
+      </div>
       <div className="nav-item"></div>
       {/* TODO: log in */}
       <div className="nav-item"></div>
