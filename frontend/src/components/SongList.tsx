@@ -16,6 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
+import "./SongList.css";
 import SongComponent, { Song } from "./Song";
 import { updateSongRank } from "../api/songService";
 
