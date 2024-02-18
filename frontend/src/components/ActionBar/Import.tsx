@@ -17,10 +17,11 @@ const ImportComponent: React.FC = () => {
   return (
     <div>
       <a className="nav-link" href="#" onClick={handleLinkClick}>
-        import
+        csv import
       </a>
       <input
         type="file"
+        accept=".csv"
         ref={fileInputRef}
         onChange={handleFileChange}
         style={{ display: "none" }}
