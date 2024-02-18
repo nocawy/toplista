@@ -3,6 +3,7 @@ import { Song } from "../Song";
 import PlayTop50 from "./PlayTop50";
 import useTop50Link from "../../hooks/useTop50Link";
 import ImportComponent from "./Import";
+import ExportComponent from "./Export";
 
 interface ActionBarProps {
   songs: Song[];
@@ -16,11 +17,9 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
       <PlayTop50 link={top50Link} />
       {/* TODO: play random 50 */}
       <div className="nav-item"></div>
-      {/* TODO: import/export */}
       <div>
-        CSV
-        <br />
         <ImportComponent />
+        <ExportComponent songs={songs} />
       </div>
       <div className="nav-item"></div>
       {/* TODO: log in */}
