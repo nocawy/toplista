@@ -15,18 +15,17 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
 
   return (
     <nav className="ActionBar">
-      <PlayTop50 link={top50Link} />
+      <div className="nav-item">
+        <PlayTop50 link={top50Link} />
+      </div>
       <div className="nav-item">
         <PlayRandom50 songs={songs} />
       </div>
-      <div className="nav-item"></div>
-      <div>
+      <div className="nav-item">
         <ImportComponent />
         <ExportComponent songs={songs} />
       </div>
-      <div className="nav-item"></div>
-      {/* TODO: log in */}
-      <div className="nav-item"></div>
+      <div className="nav-item">{/* TODO: log in */}</div>
     </nav>
   );
 };
