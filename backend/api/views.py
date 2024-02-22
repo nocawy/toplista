@@ -112,3 +112,33 @@ class UploadCSV(APIView):
 
         else:
             return JsonResponse({'status': 'error', 'message': 'No file provided'}, status=400)
+
+
+from django.db import IntegrityError
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Song, Rank
+from .serializers import SongSerializer
+from django.db.models import Max
+
+class AddSong(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = SongSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                song = serializer.save()
+                # Retrieve the highest current rank and calculate the new rank
+                highest_rank = Rank.objects.aggregate(Max('r_rank'))['r_rank__max'] or 0
+                new_rank_value = highest_rank + 1
+                # Create a Rank instance for the new song
+                Rank.objects.create(song=song, r_rank=new_rank_value)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except IntegrityError as e:
+                # Handle possible integrity errors, e.g., unique constraint violation
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Include both serializer errors and any additional error messages
+            errors = serializer.errors
+            # errors.update({'additional_error': 'Custom error message or additional info'})
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
