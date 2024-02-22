@@ -18,7 +18,8 @@ import {
 
 import "./SongList.css";
 import SongComponent, { Song } from "./Song";
-import { updateSongRank } from "../api/songService";
+import AddSongForm from "./AddSongForm";
+import { updateSongRank, addNewSong } from "../api/songService";
 
 interface SongListProps {
   songs: Song[];
@@ -95,6 +96,11 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
           </DndContext>
         </tbody>
       </table>
+      <AddSongForm
+        setSongs={setSongs}
+        addNewSong={addNewSong}
+        nextRank={songs.length + 1}
+      />
     </div>
   );
 };

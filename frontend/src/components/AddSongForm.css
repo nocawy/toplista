@@ -1,0 +1,29 @@
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  /* gap: 0px; */
+}
+
+.form-field {
+  flex: 2 1 0; /* grow, shrink, basis */
+  min-width: 80px; /* Prevents fields from becoming too small */
+  /* margin: 0 4px; */
+}
+
+.form-field.short {
+  flex: 1 1 0;
+}
+
+.form-field.long {
+  flex: 3 1 0;
+}
+
+.form-field.button {
+  min-width: 30px;
+  max-width: 30px;
+}
+
+.form-field input,
+.form-field button {
+  width: 100%; /* Sprawia, że inputy i przycisk wypełniają swój kontener */
+}
