@@ -165,3 +165,27 @@ def update_song(request, pk):
         serializer.save()
         return JsonResponse(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework import status
+from .models import Song, Rank
+from django.db.models import F
+
+@api_view(['DELETE'])
+def delete_song(request, pk):
+    try:
+        # Find the song to be deleted
+        song = Song.objects.get(pk=pk)
+        rank_to_delete = song.rank.r_rank
+        song.delete()
+
+        # Update the ranking of the remaining songs that had a higher ranking
+        Rank.objects.filter(r_rank__gt=rank_to_delete).update(r_rank=F('r_rank') - 1)
+
+        return JsonResponse({'status': 'success', 'message': f'Song with id {pk} deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+    except Song.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Song not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

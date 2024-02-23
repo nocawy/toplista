@@ -4,6 +4,7 @@ from .views import update_rank
 from .views import UploadCSV
 from .views import AddSong
 from .views import update_song
+from .views import delete_song
 
 urlpatterns = [
     path('songs/', SongList.as_view()),
@@ -11,4 +12,5 @@ urlpatterns = [
     path('upload-csv/', UploadCSV.as_view()),
     path('songs/add/', AddSong.as_view()),
     path('songs/update/<int:pk>', update_song, name='update_song'),
+    path('songs/delete/<int:pk>/', delete_song, name='delete_song'),
 ]
