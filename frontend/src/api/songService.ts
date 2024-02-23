@@ -1,4 +1,30 @@
+// api/songService.ts
+
 import { Song } from "../components/Song";
+
+async function handleErrorResponse(response: Response): Promise<void> {
+  if (!response.ok) {
+    // Attempt to read the error message from the response body
+    const errorBody = await response.json();
+
+    if (Object.keys(errorBody).length > 0) {
+      // Collect all error messages into a single string
+      let allErrors = "";
+      Object.keys(errorBody).forEach((key) => {
+        const errorsForField = errorBody[key].join(", ");
+        allErrors += `${key}: ${errorsForField}; `;
+      });
+
+      // Throw the collected errors
+      throw new Error(allErrors);
+    } else {
+      // Default error message if the errorBody is empty
+      throw new Error(
+        "Server error occurred, but no error message was provided."
+      );
+    }
+  }
+}
 
 export const fetchSongs = async (): Promise<Song[]> => {
   try {
@@ -55,25 +81,7 @@ export const addNewSong = async (newSong: Omit<Song, "id">): Promise<void> => {
       body: JSON.stringify(newSong),
     });
 
-    if (!response.ok) {
-      // Attempt to read the error message from the response body
-      const errorBody = await response.json();
-
-      if (Object.keys(errorBody).length > 0) {
-        // Collect all error messages into a single string
-        let allErrors = "";
-        Object.keys(errorBody).forEach((key) => {
-          const errorsForField = errorBody[key].join(", ");
-          allErrors += `${key}: ${errorsForField}; `;
-        });
-
-        // Throw the collected errors
-        throw new Error(allErrors);
-      } else {
-        // Default error message if the errorBody is empty
-        throw new Error("Failed to add new song");
-      }
-    }
+    handleErrorResponse(response);
 
     // Optional: Process response data
     const data = await response.json();
