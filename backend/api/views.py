@@ -1,3 +1,5 @@
+# views.py
+
 from rest_framework import generics
 from .models import Song
 from .serializers import SongSerializer
@@ -142,3 +144,24 @@ class AddSong(APIView):
             errors = serializer.errors
             # errors.update({'additional_error': 'Custom error message or additional info'})
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Song
+from .serializers import SongSerializer
+
+@api_view(['PATCH'])
+def update_song(request, pk):
+    try:
+        song = Song.objects.get(pk=pk)
+    except Song.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    serializer = SongSerializer(song, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return JsonResponse(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
