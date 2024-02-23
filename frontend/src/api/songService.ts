@@ -114,3 +114,25 @@ export const updateSong = async (song: Song): Promise<void> => {
     throw error; // Re-throwing the error to be handled by the caller
   }
 };
+
+export const deleteSong = async (songId: number): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${process.env.REACT_APP_API_URL}songs/delete/${songId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          // 'Authorization': `Bearer ${YourAuthToken}`,
+        },
+      }
+    );
+
+    handleErrorResponse(response);
+
+    console.log("Song deleted successfully");
+  } catch (error) {
+    console.error("Error deleting song:", error);
+    throw error; // Re-throwing the error to be handled by the caller
+  }
+};
