@@ -91,3 +91,26 @@ export const addNewSong = async (newSong: Omit<Song, "id">): Promise<void> => {
     throw error; // Re-throwing the error to be handled by the caller
   }
 };
+
+export const updateSong = async (song: Song): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${process.env.REACT_APP_API_URL}songs/update/${song.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          // 'Authorization': 'Token YourAuthorizationToken',
+        },
+        body: JSON.stringify(song),
+      }
+    );
+
+    handleErrorResponse(response);
+
+    console.log("Song updated successfully");
+  } catch (error) {
+    console.error("Error updating song:", error);
+    throw error; // Re-throwing the error to be handled by the caller
+  }
+};
