@@ -49,6 +49,12 @@ pip install -r requirements.txt
 python manage.py migrate
 ```
 
+To enable editing the song ranking, create an administrator password (use the same command to change the password):
+
+```bash
+python manage.py initialize_accounts <new_admin_password>
+```
+
 Installing packages and applying migrations are typically one-time actions.
 However, you'll need to start the server every time you work on the project:
 
