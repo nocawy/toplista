@@ -33,16 +33,30 @@ cd toplista
 
 ### Backend Setup
 
-Switch to the backend directory, install required packages, apply migrations to create database, and start the server:
+Before starting, it's recommended to create a virtual environment to isolate project dependencies:
+
+```bash
+python -m venv --prompt="toplista" .venv
+source .venv/bin/activate  # On Unix/macOS
+.venv\Scripts\activate  # On Windows
+```
+
+Switch to the backend directory, install required packages, and apply migrations to create the database:
 
 ```bash
 cd backend
 pip install -r requirements.txt
 python manage.py migrate
+```
+
+Installing packages and applying migrations are typically one-time actions.
+However, you'll need to start the server every time you work on the project:
+
+```bash
 python manage.py runserver
 ```
 
-Optionally import songs from a CSV file into the database.
+Optionally, import songs from a CSV file into the database.
 The CSV file must include the following headers: `yt_id, Artist, Title, Album, released, discovered, comment, rank.`
 
 ```bash
