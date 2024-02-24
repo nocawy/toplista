@@ -189,3 +189,22 @@ def delete_song(request, pk):
         return JsonResponse({'status': 'error', 'message': 'Song not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import LoginSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class LoginAPIView(APIView):
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = serializer.validated_data
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
