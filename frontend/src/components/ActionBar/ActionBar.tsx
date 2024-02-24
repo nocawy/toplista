@@ -5,6 +5,7 @@ import useTop50Link from "../../hooks/useTop50Link";
 import PlayRandom50 from "./PlayRandom50";
 import ImportComponent from "./Import";
 import ExportComponent from "./Export";
+import LoginForm from "./LoginForm";
 
 interface ActionBarProps {
   songs: Song[];
@@ -25,7 +26,9 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
         <ImportComponent />
         <ExportComponent songs={songs} />
       </div>
-      <div className="nav-item">{/* TODO: log in */}</div>
+      <div className="nav-item">
+        <LoginForm />
+      </div>
     </nav>
   );
 };

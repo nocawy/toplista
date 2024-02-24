@@ -25,3 +25,22 @@
 .nav-link div {
   line-height: 1.2;
 }
+
+.login-form {
+  max-width: 7em;
+  width: "100%";
+}
+
+.text-button {
+  background: none;
+  color: white;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.text-button:hover,
+.text-button:active {
+  color: #4caf50;
+}
