@@ -105,11 +105,13 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
         </tbody>
       </table>
       {isLoggedIn && (
-        <AddSongForm
-          setSongs={setSongs}
-          addNewSong={addNewSong}
-          nextRank={songs.length + 1}
-        />
+        <div className="form-holder">
+          <AddSongForm
+            setSongs={setSongs}
+            addNewSong={addNewSong}
+            nextRank={songs.length + 1}
+          />
+        </div>
       )}
     </div>
   );

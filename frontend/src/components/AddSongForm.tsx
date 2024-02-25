@@ -74,7 +74,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="form-row">
-      <div className="form-field short">
+      <div className="form-field yt_id">
         <input
           name="s_yt_id"
           value={newSong.s_yt_id}
@@ -106,7 +106,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
           placeholder="Album"
         />
       </div>
-      <div className="form-field short">
+      <div className="form-field years">
         <input
           name="s_released"
           value={newSong.s_released}
@@ -114,7 +114,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
           placeholder="released"
         />
       </div>
-      <div className="form-field short">
+      <div className="form-field years">
         <input
           name="s_discovered"
           value={newSong.s_discovered}
@@ -130,7 +130,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
           placeholder="comment"
         />
       </div>
-      <div className="form-field button">
+      <div className="form-field add-button">
         <button type="submit">
           <FontAwesomeIcon icon={faPlus} />
         </button>

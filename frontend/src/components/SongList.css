@@ -9,21 +9,14 @@ th {
   background-color: white;
 }
 
-th,
-td {
-  padding: 2px 2px;
-}
-
-td:first-child {
-  padding-left: 6px;
-}
-
 tr:nth-child(odd) {
   background-color: #f3f3f3;
 }
 
 /* Drag handle */
 .drag-handle {
+  margin-left: 4px;
+  margin-right: 2px;
   cursor: grab;
 }
 

@@ -1,3 +1,7 @@
+.form-holder {
+  padding: 0px 1px;
+}
+
 .form-row {
   display: flex;
   flex-wrap: wrap;
@@ -5,17 +9,20 @@
 }
 
 .form-field {
-  flex: 2 1 0; /* grow, shrink, basis */
+  flex: 1 1 0; /* grow, shrink, basis */
   min-width: 80px; /* Prevents fields from becoming too small */
-  /* margin: 0 4px; */
 }
 
-.form-field.short {
-  flex: 1 1 0;
+.form-field.yt_id {
+  flex: 0 0 6em;
+}
+
+.form-field.years {
+  flex: 0 0 5.5em;
 }
 
 .form-field.long {
-  flex: 3 1 0;
+  flex: 1.55 1 0;
 }
 
 .form-field.button {
@@ -23,7 +30,14 @@
   max-width: 30px;
 }
 
+.form-field.add-button {
+  min-width: 90px;
+  max-width: 90px;
+}
+
 .form-field input,
 .form-field button {
-  width: 100%; /* Sprawia, że inputy i przycisk wypełniają swój kontener */
+  font-size: inherit;
+  box-sizing: border-box;
+  width: 100%;
 }

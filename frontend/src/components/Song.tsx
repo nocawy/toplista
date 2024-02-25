@@ -136,9 +136,11 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
           <td>{song.s_comment || "-"}</td>
           {isLoggedIn && (
             <td>
-              <button onClick={() => setIsEditing(true)}>
-                <FontAwesomeIcon icon={faEdit} /> {/* edit */}
-              </button>
+              <div className="form-field button">
+                <button onClick={() => setIsEditing(true)}>
+                  <FontAwesomeIcon icon={faEdit} /> {/* edit */}
+                </button>
+              </div>
             </td>
           )}
         </>
@@ -146,7 +148,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
         // Song edit form
         <td colSpan={10}>
           <form className="form-row">
-            <div className="form-field short">
+            <div className="form-field yt_id">
               <input
                 name="s_yt_id"
                 value={editedSong.s_yt_id}
@@ -178,7 +180,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 placeholder="Album"
               />
             </div>
-            <div className="form-field short">
+            <div className="form-field years">
               <input
                 name="s_released"
                 value={editedSong.s_released}
@@ -186,7 +188,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 placeholder="released"
               />
             </div>
-            <div className="form-field short">
+            <div className="form-field years">
               <input
                 name="s_discovered"
                 value={editedSong.s_discovered}
