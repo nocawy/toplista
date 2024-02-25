@@ -20,6 +20,7 @@ import "./SongList.css";
 import SongComponent, { Song } from "./Song";
 import AddSongForm from "./AddSongForm";
 import { updateSongRank, addNewSong } from "../api/songService";
+import { useAuth } from "../contexts/AuthContext";
 
 interface SongListProps {
   songs: Song[];
@@ -27,6 +28,8 @@ interface SongListProps {
 }
 
 const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
+  const { isLoggedIn } = useAuth();
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -43,7 +46,7 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
   const handleDragEnd = (event: any) => {
     document.body.style.cursor = "";
     const { active, over } = event;
-    if (active != null && over != null) {
+    if (active != null && over != null && isLoggedIn) {
       if (active.id !== over.id) {
         setSongs((songs) => {
           const oldIndex = songs.findIndex((song) => song.id === active.id);
@@ -101,11 +104,13 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
           </DndContext>
         </tbody>
       </table>
-      <AddSongForm
-        setSongs={setSongs}
-        addNewSong={addNewSong}
-        nextRank={songs.length + 1}
-      />
+      {isLoggedIn && (
+        <AddSongForm
+          setSongs={setSongs}
+          addNewSong={addNewSong}
+          nextRank={songs.length + 1}
+        />
+      )}
     </div>
   );
 };

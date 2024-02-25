@@ -12,6 +12,7 @@ import {
   faTrashAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { fetchSongs, updateSong, deleteSong } from "../api/songService";
+import { useAuth } from "../contexts/AuthContext";
 
 export interface Song {
   id: number;
@@ -34,6 +35,8 @@ interface SongProps {
 }
 
 const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
+  const { isLoggedIn } = useAuth();
+
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: song.id,
@@ -131,11 +134,13 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
           <td>{song.s_released || "-"}</td>
           <td>{song.s_discovered || "-"}</td>
           <td>{song.s_comment || "-"}</td>
-          <td>
-            <button onClick={() => setIsEditing(true)}>
-              <FontAwesomeIcon icon={faEdit} /> {/* edit */}
-            </button>
-          </td>
+          {isLoggedIn && (
+            <td>
+              <button onClick={() => setIsEditing(true)}>
+                <FontAwesomeIcon icon={faEdit} /> {/* edit */}
+              </button>
+            </td>
+          )}
         </>
       ) : (
         // Song edit form
