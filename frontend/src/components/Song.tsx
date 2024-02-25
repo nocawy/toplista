@@ -110,7 +110,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
 
   return (
     <tr ref={setNodeRef} style={style}>
-      {!isEditing ? (
+      {!isEditing || !isLoggedIn ? (
         <>
           <td>
             <div className="drag-handle" {...attributes} {...listeners}>
