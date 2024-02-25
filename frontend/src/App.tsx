@@ -3,6 +3,7 @@ import ActionBar from "./components/ActionBar/ActionBar";
 import SongList from "./components/SongList";
 import useSongs from "./hooks/useSongs";
 import { AuthProvider } from "./contexts/AuthContext";
+import Footer from "./components/Footer";
 
 function App() {
   const { songs, setSongs } = useSongs();
@@ -16,6 +17,7 @@ function App() {
         <ActionBar songs={songs} />
         <SongList songs={songs} setSongs={setSongs} />
       </AuthProvider>
+      <Footer />
     </div>
   );
 }
