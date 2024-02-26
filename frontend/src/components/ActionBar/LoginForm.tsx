@@ -6,12 +6,19 @@ import { useAuth } from "../../contexts/AuthContext";
 const LoginForm: React.FC = () => {
   const [password, setPassword] = useState<string>("");
   const { isLoggedIn, login, logout, username } = useAuth();
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const submitForm = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const success = await handleLogin("demo", password);
-    if (success) {
-      login("demo");
+    try {
+      const success = await handleLogin("demo", password);
+      if (success) {
+        login("demo");
+        setErrors({});
+      }
+    } catch (error) {
+      setErrors({ password: "wrong password" });
+      console.error("Login error:", error);
     }
   };
 
@@ -39,6 +46,7 @@ const LoginForm: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
+      {errors.password && <div className="error">{errors.password}</div>}
       <button type="submit" className="text-button">
         log in to edit
       </button>
