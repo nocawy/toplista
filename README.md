@@ -6,16 +6,20 @@ TopList is a web application designed to be a personal music ranking.
 
 ## Features
 
-- Interactive Song Ranking with a drag-and-drop interface
-- CSV Import/Export
-- CRUD Operations (create, read, update, and delete)
-- YouTube Playlist Creation
+- Interactive song ranking with a drag-and-drop interface
+- YouTube playlist creation
+  - play top 50
+  - select random 50 songs and play them in list order
+- CSV import/export
+- Log in to edit the list
+- CRUD operations (create, read, update, and delete)
 
 ## Technologies
 
-- **Frontend:** React + TypeScript
 - **Backend:** Django REST Framework
+- **Frontend:** React + TypeScript
 - **Database:** SQLite
+- **Authentication:** JWT
 
 ## Installation (Local Setup)
 
