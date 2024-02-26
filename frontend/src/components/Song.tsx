@@ -36,6 +36,7 @@ interface SongProps {
 
 const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
   const { isLoggedIn } = useAuth();
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
@@ -91,8 +92,18 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
       // Refresh the song list on the frontend to reflect the update
       refreshSongList();
       setIsEditing(false);
+      // Clear errors after successfully adding a new song
+      setErrors({});
     } catch (error) {
-      console.error("Failed to save the song:", error);
+      console.error("Failed handleSave to save the song:", error);
+      // Directly cast `error` to the expected type
+      const errorObject = error as { [key: string]: string[] }; // Assuming the server returns an array of strings as error messages
+      const formattedErrors = Object.keys(errorObject).reduce((acc, key) => {
+        // We take the first error for each key
+        acc[key] = errorObject[key][0];
+        return acc;
+      }, {} as { [key: string]: string });
+      setErrors(formattedErrors);
     }
   };
 
@@ -155,6 +166,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="YouTube ID"
               />
+              {errors.s_yt_id && <div className="error">{errors.s_yt_id}</div>}
             </div>
             <div className="form-field">
               <input
@@ -163,6 +175,9 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="Artist"
               />
+              {errors.s_artist && (
+                <div className="error">{errors.s_artist}</div>
+              )}
             </div>
             <div className="form-field">
               <input
@@ -171,6 +186,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="Title"
               />
+              {errors.s_title && <div className="error">{errors.s_title}</div>}
             </div>
             <div className="form-field">
               <input
@@ -179,6 +195,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="Album"
               />
+              {errors.s_album && <div className="error">{errors.s_album}</div>}
             </div>
             <div className="form-field years">
               <input
@@ -187,6 +204,9 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="released"
               />
+              {errors.s_released && (
+                <div className="error">{errors.s_released}</div>
+              )}
             </div>
             <div className="form-field years">
               <input
@@ -195,6 +215,9 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="discovered"
               />
+              {errors.s_discovered && (
+                <div className="error">{errors.s_discovered}</div>
+              )}
             </div>
             <div className="form-field long">
               <input
@@ -203,6 +226,9 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
                 onChange={handleChange}
                 placeholder="comment"
               />
+              {errors.s_comment && (
+                <div className="error">{errors.s_comment}</div>
+              )}
             </div>
             <div className="form-field button">
               <button onClick={handleSave}>
