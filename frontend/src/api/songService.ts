@@ -2,30 +2,6 @@
 
 import { Song } from "../components/Song";
 
-async function handleErrorResponse(response: Response): Promise<void> {
-  if (!response.ok) {
-    // Attempt to read the error message from the response body
-    const errorBody = await response.json();
-
-    if (Object.keys(errorBody).length > 0) {
-      // Collect all error messages into a single string
-      let allErrors = "";
-      Object.keys(errorBody).forEach((key) => {
-        const errorsForField = errorBody[key].join(", ");
-        allErrors += `${key}: ${errorsForField}; `;
-      });
-
-      // Throw the collected errors
-      throw new Error(allErrors);
-    } else {
-      // Default error message if the errorBody is empty
-      throw new Error(
-        "Server error occurred, but no error message was provided."
-      );
-    }
-  }
-}
-
 export const fetchSongs = async (): Promise<Song[]> => {
   try {
     const response = await fetch(`${process.env.REACT_APP_API_URL}songs/`);
@@ -81,7 +57,10 @@ export const addNewSong = async (newSong: Omit<Song, "id">): Promise<void> => {
       body: JSON.stringify(newSong),
     });
 
-    handleErrorResponse(response);
+    if (!response.ok) {
+      const errorBody = await response.json();
+      throw errorBody;
+    }
 
     // Optional: Process response data
     const data = await response.json();
@@ -106,7 +85,10 @@ export const updateSong = async (song: Song): Promise<void> => {
       }
     );
 
-    handleErrorResponse(response);
+    if (!response.ok) {
+      const errorBody = await response.json();
+      throw errorBody;
+    }
 
     console.log("Song updated successfully");
   } catch (error) {
@@ -128,7 +110,10 @@ export const deleteSong = async (songId: number): Promise<void> => {
       }
     );
 
-    handleErrorResponse(response);
+    if (!response.ok) {
+      const errorBody = await response.json();
+      throw errorBody;
+    }
 
     console.log("Song deleted successfully");
   } catch (error) {
