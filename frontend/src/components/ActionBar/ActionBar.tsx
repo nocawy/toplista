@@ -6,6 +6,7 @@ import PlayRandom50 from "./PlayRandom50";
 import ImportComponent from "./Import";
 import ExportComponent from "./Export";
 import LoginForm from "./LoginForm";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ActionBarProps {
   songs: Song[];
@@ -13,6 +14,7 @@ interface ActionBarProps {
 
 const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
   const top50Link = useTop50Link(songs);
+  const { isLoggedIn } = useAuth();
 
   return (
     <nav className="ActionBar">
@@ -23,7 +25,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
         <PlayRandom50 songs={songs} />
       </div>
       <div className="nav-item">
-        <ImportComponent />
+        {isLoggedIn ? <ImportComponent /> : <br />}
         <ExportComponent songs={songs} />
       </div>
       <div className="nav-item">
