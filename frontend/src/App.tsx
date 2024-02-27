@@ -14,7 +14,7 @@ function App() {
         <h1>Osobisty Top Wszech Czasów</h1>
       </header>
       <AuthProvider>
-        <ActionBar songs={songs} />
+        <ActionBar songs={songs} setSongs={setSongs} />
         <SongList songs={songs} setSongs={setSongs} />
       </AuthProvider>
       <Footer />

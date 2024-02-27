@@ -1,16 +1,28 @@
+// components/ActionBar/Import.tsx
 import React, { useRef } from "react";
 import uploadCSV from "../../api/uploadCSV";
+import { Song } from "../Song";
+import { fetchSongs } from "../../api/songService";
 
-const ImportComponent: React.FC = () => {
+interface ImportComponentProps {
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+}
+
+const ImportComponent: React.FC<ImportComponentProps> = ({ setSongs }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLinkClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (event.target.files && event.target.files[0]) {
-      uploadCSV(event.target.files[0]);
+      await uploadCSV(event.target.files[0]);
+      // Refresh the SongList after upload
+      const updatedSongsList = await fetchSongs();
+      setSongs(updatedSongsList);
     }
   };
 

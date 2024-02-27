@@ -1,3 +1,4 @@
+// components/ActionBar/ActionBar.tsx
 import "./ActionBar.css";
 import { Song } from "../Song";
 import PlayTop50 from "./PlayTop50";
@@ -10,9 +11,10 @@ import { useAuth } from "../../contexts/AuthContext";
 
 interface ActionBarProps {
   songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
+const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs }) => {
   const top50Link = useTop50Link(songs);
   const { isLoggedIn } = useAuth();
 
@@ -25,7 +27,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs }) => {
         <PlayRandom50 songs={songs} />
       </div>
       <div className="nav-item">
-        {isLoggedIn ? <ImportComponent /> : <br />}
+        {isLoggedIn ? <ImportComponent setSongs={setSongs} /> : <br />}
         <ExportComponent songs={songs} />
       </div>
       <div className="nav-item">
