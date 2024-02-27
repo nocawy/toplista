@@ -43,19 +43,20 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
     document.body.style.cursor = "grabbing";
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = async (event: any) => {
     document.body.style.cursor = "";
     const { active, over } = event;
     if (active != null && over != null && isLoggedIn) {
       if (active.id !== over.id) {
-        setSongs((songs) => {
-          const oldIndex = songs.findIndex((song) => song.id === active.id);
-          const newIndex = songs.findIndex((song) => song.id === over.id);
-          // const oldIndex = songs.indexOf(active.id);
-          // const newIndex = songs.indexOf(over.id);
-          updateSongRank({ songId: active.id, newRank: newIndex + 1 });
-          return arrayMove(songs, oldIndex, newIndex);
-        });
+        const oldIndex = songs.findIndex((song) => song.id === active.id);
+        const newIndex = songs.findIndex((song) => song.id === over.id);
+        setSongs((songs) => arrayMove(songs, oldIndex, newIndex));
+        try {
+          await updateSongRank({ songId: active.id, newRank: newIndex + 1 });
+        } catch (error) {
+          setSongs((songs) => arrayMove(songs, newIndex, oldIndex));
+          console.error("Error after dragging a song: ", error);
+        }
       }
     }
   };
