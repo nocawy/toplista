@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { isAxiosError } from "axios";
 import { Song } from "./Song";
 import "./AddSongForm.css";
 import { fetchSongs } from "../api/songService";
@@ -30,7 +31,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
     r_rank: nextRank,
   });
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -73,15 +74,12 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       }));
     } catch (error) {
       // console.error("Error handleSubmit new song:", error);
-      // Directly cast `error` to the expected type
-      const errorObject = error as { [key: string]: string[] }; // Assuming the server returns an array of strings as error messages
-      const formattedErrors = Object.keys(errorObject).reduce((acc, key) => {
-        // We take the first error for each key
-        acc[key] = errorObject[key][0];
-        return acc;
-      }, {} as { [key: string]: string });
-
-      setErrors(formattedErrors);
+      if (isAxiosError(error) && error.response) {
+        setErrors(error.response.data);
+      } else {
+        // console.error("Unexpected error:", error);
+        setErrors({ general: ["An unexpected error occurred."] });
+      }
     }
   };
 

@@ -1,6 +1,7 @@
 // Song.tsx
 
 import React, { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import "./AddSongForm.css";
@@ -36,7 +37,6 @@ interface SongProps {
 
 const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
   const { isLoggedIn } = useAuth();
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
@@ -50,6 +50,7 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editedSong, setEditedSong] = useState<Song>(song);
+  const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
 
   useEffect(() => {
     // Handle key down event to listen for ESC key press
@@ -95,15 +96,13 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
       // Clear errors after successfully adding a new song
       setErrors({});
     } catch (error) {
-      console.error("Failed handleSave to save the song:", error);
-      // Directly cast `error` to the expected type
-      const errorObject = error as { [key: string]: string[] }; // Assuming the server returns an array of strings as error messages
-      const formattedErrors = Object.keys(errorObject).reduce((acc, key) => {
-        // We take the first error for each key
-        acc[key] = errorObject[key][0];
-        return acc;
-      }, {} as { [key: string]: string });
-      setErrors(formattedErrors);
+      // console.error("Failed handleSave to save the song:", error);
+      if (isAxiosError(error) && error.response) {
+        setErrors(error.response.data);
+      } else {
+        // console.error("Unexpected error:", error);
+        setErrors({ general: ["An unexpected error occurred."] });
+      }
     }
   };
 
