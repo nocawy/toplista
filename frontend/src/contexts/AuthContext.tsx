@@ -1,3 +1,4 @@
+// contexts/AuthContext.tsx
 import React, {
   createContext,
   useContext,
@@ -11,6 +12,12 @@ interface AuthContextType {
   isLoggedIn: boolean;
   login: (username: string) => void;
   logout: () => void;
+}
+
+declare global {
+  interface Window {
+    logoutFromApi: () => void;
+  }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,9 +38,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setIsLoggedIn(false);
     setUsername("");
     localStorage.removeItem("username");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   };
 
   useEffect(() => {
+    window.logoutFromApi = logout;
     const token = localStorage.getItem("accessToken");
     const username = localStorage.getItem("username");
     if (token && username) {
