@@ -7,6 +7,7 @@ from .views import AddSong
 from .views import update_song
 from .views import delete_song
 from .views import LoginAPIView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('songs/', SongList.as_view()),
@@ -16,4 +17,5 @@ urlpatterns = [
     path('songs/update/<int:pk>', update_song, name='update_song'),
     path('songs/delete/<int:pk>/', delete_song, name='delete_song'),
     path('login/', LoginAPIView.as_view(), name='api_login'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
