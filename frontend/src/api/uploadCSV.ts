@@ -1,4 +1,4 @@
-const uploadFile = async (file: File): Promise<void> => {
+const uploadCSV = async (file: File): Promise<void> => {
   const formData = new FormData();
   formData.append("file", file);
 
@@ -21,4 +21,4 @@ const uploadFile = async (file: File): Promise<void> => {
   }
 };
 
-export default uploadFile;
+export default uploadCSV;

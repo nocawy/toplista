@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import uploadFile from "../../api/uploadFile";
+import uploadCSV from "../../api/uploadCSV";
 
 const ImportComponent: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -10,7 +10,7 @@ const ImportComponent: React.FC = () => {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      uploadFile(event.target.files[0]);
+      uploadCSV(event.target.files[0]);
     }
   };
 
