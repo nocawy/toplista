@@ -1,21 +1,27 @@
 # views.py
+from django.core.management import call_command
+from django.db import IntegrityError
+from django.db.models import F, Max
+from django.http import JsonResponse
+import json
+import os
 
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
-from .models import Song
-from .serializers import SongSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import Rank, Song
+from .serializers import LoginSerializer, SongSerializer
+
 
 class SongList(generics.ListAPIView):
     queryset = Song.objects.all().order_by('rank__r_rank')
     serializer_class = SongSerializer
 
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-from django.db.models import F
-from .models import Rank
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
@@ -72,12 +78,6 @@ def update_rank(request):
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-import os
-from django.core.management import call_command
-from django.http import JsonResponse
-
 class UploadCSV(APIView):
     """
     A view that handles CSV file uploads for importing songs into the database via POST requests.
@@ -120,14 +120,6 @@ class UploadCSV(APIView):
             return JsonResponse({'status': 'error', 'message': 'No file provided'}, status=400)
 
 
-from django.db import IntegrityError
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Song, Rank
-from .serializers import SongSerializer
-from django.db.models import Max
-
 class AddSong(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
@@ -151,13 +143,6 @@ class AddSong(APIView):
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         
 
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Song
-from .serializers import SongSerializer
-
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_song(request, pk):
@@ -172,12 +157,6 @@ def update_song(request, pk):
         return JsonResponse(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from rest_framework import status
-from .models import Song, Rank
-from django.db.models import F
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -197,12 +176,6 @@ def delete_song(request, pk):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import LoginSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
 class LoginAPIView(APIView):
     def post(self, request):
