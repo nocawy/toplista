@@ -1,6 +1,8 @@
 # views.py
 
 from rest_framework import generics
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .models import Song
 from .serializers import SongSerializer
 
@@ -15,7 +17,8 @@ import json
 from django.db.models import F
 from .models import Rank
 
-@csrf_exempt
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
 def update_rank(request):
     """
     Updates the ranking of a song based on the provided song ID and new rank.
@@ -92,6 +95,7 @@ class UploadCSV(APIView):
     it returns an error message accordingly.
     """
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         csv_file = request.FILES.get('file')
@@ -125,6 +129,7 @@ from .serializers import SongSerializer
 from django.db.models import Max
 
 class AddSong(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
         serializer = SongSerializer(data=request.data)
         if serializer.is_valid():
@@ -154,6 +159,7 @@ from .models import Song
 from .serializers import SongSerializer
 
 @api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
 def update_song(request, pk):
     try:
         song = Song.objects.get(pk=pk)
@@ -174,6 +180,7 @@ from .models import Song, Rank
 from django.db.models import F
 
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_song(request, pk):
     try:
         # Find the song to be deleted
