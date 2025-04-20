@@ -1,5 +1,5 @@
 // LoginForm.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { handleLogin } from "../../api/loginApi";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -8,12 +8,15 @@ const LoginForm: React.FC = () => {
   const { isLoggedIn, login, logout, username } = useAuth();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  const isDemo = process.env.REACT_APP_DEMO_MODE === "true";
+  const user = isDemo ? "demo" : "admin";
+
   const submitForm = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const success = await handleLogin("demo", password);
+      const success = await handleLogin(user, password);
       if (success) {
-        login("demo");
+        login(user);
         setErrors({});
       }
     } catch (error) {
@@ -41,7 +44,7 @@ const LoginForm: React.FC = () => {
           className="login-form"
           type="password"
           id="password"
-          placeholder="type 'demo'"
+          placeholder={isDemo ? "type 'demo'" : ""}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

@@ -4,6 +4,9 @@ TopList is a web application designed to be a personal music ranking.
 
 [https://nocawy.pl/toplista/](https://nocawy.pl/toplista/)
 
+Demo available at:  
+[https://nocawy.pl/toplista-demo/](https://nocawy.pl/toplista-demo/)
+
 ## Features
 
 - Interactive song ranking with a drag-and-drop interface
