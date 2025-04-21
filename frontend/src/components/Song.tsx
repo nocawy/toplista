@@ -65,10 +65,26 @@ const SongComponent: React.FC<SongProps> = ({
   const [rankInput, setrankInput] = useState<number>(song.r_rank);
   const [editedSong, setEditedSong] = useState<Song>(song);
   const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
+  const [isUnavailable, setIsUnavailable] = useState<boolean>(false);
 
   useEffect(() => {
     setrankInput(song.r_rank);
   }, [song.r_rank]);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = `https://img.youtube.com/vi/${song.s_yt_id}/mqdefault.jpg`;
+
+    img.onload = () => {
+      if (img.naturalWidth === 120 && img.naturalHeight === 90) {
+        setIsUnavailable(true); // placeholder thumbnail = video probably unavailable
+      }
+    };
+
+    img.onerror = () => {
+      setIsUnavailable(true); // could not load thumbnail at all
+    };
+  }, [song.s_yt_id]);
 
   useEffect(() => {
     // Handle key down event to listen for ESC key press
@@ -184,7 +200,7 @@ const SongComponent: React.FC<SongProps> = ({
                 onBlur={() => setIsEditingRank(false)}
                 autoFocus
                 style={{
-                  width: "1.5em",
+                  width: "1.65em",
                   textAlign: "center",
                   border: "none",
                   outline: "none",
@@ -198,7 +214,7 @@ const SongComponent: React.FC<SongProps> = ({
           </td>
           <td>
             <a
-              className="play-link"
+              className={`play-link ${isUnavailable ? "unavailable" : ""}`}
               href={`https://www.youtube.com/watch?v=${song.s_yt_id}`}
               target="_blank"
               rel="noopener noreferrer"
