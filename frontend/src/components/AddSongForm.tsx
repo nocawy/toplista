@@ -84,7 +84,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="form-row">
+    <form onSubmit={handleSubmit} className="form-row" autoComplete="off">
       <div className="form-field yt_id">
         <input
           name="s_yt_id"

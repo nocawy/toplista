@@ -241,7 +241,7 @@ const SongComponent: React.FC<SongProps> = ({
       ) : (
         // Song edit form
         <td colSpan={10}>
-          <form className="form-row">
+          <form className="form-row" autoComplete="off">
             <div className="form-field yt_id">
               <input
                 name="s_yt_id"
