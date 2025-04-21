@@ -19,7 +19,7 @@ import {
 import "./SongList.css";
 import SongComponent, { Song } from "./Song";
 import AddSongForm from "./AddSongForm";
-import { updateSongRank, addNewSong } from "../api/songService";
+import { updateSongRank, addNewSong, fetchSongs } from "../api/songService";
 import { useAuth } from "../contexts/AuthContext";
 
 interface SongListProps {
@@ -46,17 +46,25 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
   const handleDragEnd = async (event: any) => {
     document.body.style.cursor = "";
     const { active, over } = event;
-    if (active != null && over != null && isLoggedIn) {
-      if (active.id !== over.id) {
-        const oldIndex = songs.findIndex((song) => song.id === active.id);
-        const newIndex = songs.findIndex((song) => song.id === over.id);
-        setSongs((songs) => arrayMove(songs, oldIndex, newIndex));
-        try {
-          await updateSongRank({ songId: active.id, newRank: newIndex + 1 });
-        } catch (error) {
-          setSongs((songs) => arrayMove(songs, newIndex, oldIndex));
-          console.error("Error after dragging a song: ", error);
-        }
+
+    if (active && over && isLoggedIn && active.id !== over.id) {
+      const oldIndex = songs.findIndex((song) => song.id === active.id);
+      const newIndex = songs.findIndex((song) => song.id === over.id);
+
+      // 1) Optimistically move the item in the UI
+      setSongs((songs) => arrayMove(songs, oldIndex, newIndex));
+
+      try {
+        // 2) Notify the backend to update all affected ranks
+        await updateSongRank({ songId: active.id, newRank: newIndex + 1 });
+
+        // 3) Fetch the updated song list with correct r_rank values from the server
+        const updated = await fetchSongs();
+        setSongs(updated);
+      } catch (error) {
+        // 4) On error, rollback the optimistic UI update
+        setSongs((songs) => arrayMove(songs, newIndex, oldIndex));
+        console.error("Error after dragging a song: ", error);
       }
     }
   };
@@ -98,6 +106,7 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
                   key={song.id}
                   song={song}
                   index={index + 1} // pass index+1 so that numbering starts with 1
+                  songsCount={songs.length}
                   setSongs={setSongs}
                 />
               ))}

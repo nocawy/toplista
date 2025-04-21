@@ -5,6 +5,7 @@ import { isAxiosError } from "axios";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import "./AddSongForm.css";
+import "./Song.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEdit,
@@ -12,7 +13,12 @@ import {
   faTimes,
   faTrashAlt,
 } from "@fortawesome/free-solid-svg-icons";
-import { fetchSongs, updateSong, deleteSong } from "../api/songService";
+import {
+  fetchSongs,
+  updateSong,
+  deleteSong,
+  updateSongRank,
+} from "../api/songService";
 import { useAuth } from "../contexts/AuthContext";
 
 export interface Song {
@@ -32,10 +38,16 @@ export interface Song {
 interface SongProps {
   song: Song;
   index: number; // row number
+  songsCount: number;
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
 }
 
-const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
+const SongComponent: React.FC<SongProps> = ({
+  song,
+  index,
+  songsCount,
+  setSongs,
+}) => {
   const { isLoggedIn } = useAuth();
 
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -49,8 +61,14 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
   };
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isEditingRank, setIsEditingRank] = useState<boolean>(false);
+  const [rankInput, setrankInput] = useState<number>(song.r_rank);
   const [editedSong, setEditedSong] = useState<Song>(song);
   const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
+
+  useEffect(() => {
+    setrankInput(song.r_rank);
+  }, [song.r_rank]);
 
   useEffect(() => {
     // Handle key down event to listen for ESC key press
@@ -77,11 +95,30 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    if (e.target.name === "r_rank") {
+      return setrankInput(parseInt(e.target.value, 10));
+    }
     const { name, value } = e.target;
     setEditedSong((prev) => ({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleRankKey = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setIsEditingRank(false);
+      setrankInput(song.r_rank);
+    }
+    if (e.key === "Enter") {
+      try {
+        await updateSongRank({ songId: song.id, newRank: rankInput });
+        setIsEditingRank(false);
+        refreshSongList();
+      } catch (err) {
+        console.error("Couldn't update rank:", err);
+      }
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -127,7 +164,38 @@ const SongComponent: React.FC<SongProps> = ({ song, index, setSongs }) => {
               &equiv; {/* ≡ */}
             </div>
           </td>
-          <td>{index}</td>
+          <td
+            onClick={() => {
+              if (!isLoggedIn) return;
+              setrankInput(song.r_rank);
+              setIsEditingRank(true);
+            }}
+            style={{ cursor: isLoggedIn ? "pointer" : "default" }}
+          >
+            {isEditingRank ? (
+              <input
+                name="r_rank"
+                type="number"
+                min={1}
+                max={songsCount}
+                value={rankInput}
+                onChange={(e) => setrankInput(parseInt(e.target.value, 10))}
+                onKeyDown={handleRankKey}
+                onBlur={() => setIsEditingRank(false)}
+                autoFocus
+                style={{
+                  width: "1.5em",
+                  textAlign: "center",
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                }}
+                className="no-spinner"
+              />
+            ) : (
+              index
+            )}
+          </td>
           <td>
             <a
               className="play-link"
