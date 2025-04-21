@@ -24,12 +24,12 @@ import { useAuth } from "../contexts/AuthContext";
 export interface Song {
   id: number;
   s_yt_id: string;
-  s_artist: string;
+  s_artist: string | null;
   s_title: string;
-  s_album?: string; // optional
-  s_released?: number; // optional
-  s_discovered?: number; // optional
-  s_comment?: string; // optional
+  s_album: string | null;
+  s_released: number | null;
+  s_discovered: string | null;
+  s_comment: string | null;
   s_last_updated: string;
   s_created_on: string;
   r_rank: number;
@@ -117,7 +117,12 @@ const SongComponent: React.FC<SongProps> = ({
     const { name, value } = e.target;
     setEditedSong((prev) => ({
       ...prev,
-      [name]: value,
+      [name]:
+        name === "s_released"
+          ? value === ""
+            ? null
+            : parseInt(value, 10)
+          : value,
     }));
   };
 
@@ -222,7 +227,7 @@ const SongComponent: React.FC<SongProps> = ({
               &#x23F5; {/* ⏵,  &#9654; &#x25B6; ▶ */}
             </a>
           </td>
-          <td>{song.s_artist}</td>
+          <td>{song.s_artist || "-"}</td>
           <td>{song.s_title}</td>
           <td>{song.s_album || "-"}</td>
           <td>{song.s_released || "-"}</td>
@@ -254,7 +259,7 @@ const SongComponent: React.FC<SongProps> = ({
             <div className="form-field">
               <input
                 name="s_artist"
-                value={editedSong.s_artist}
+                value={editedSong.s_artist ?? ""}
                 onChange={handleChange}
                 placeholder="Artist"
               />
@@ -274,7 +279,7 @@ const SongComponent: React.FC<SongProps> = ({
             <div className="form-field">
               <input
                 name="s_album"
-                value={editedSong.s_album}
+                value={editedSong.s_album ?? ""}
                 onChange={handleChange}
                 placeholder="Album"
               />
@@ -283,7 +288,8 @@ const SongComponent: React.FC<SongProps> = ({
             <div className="form-field years">
               <input
                 name="s_released"
-                value={editedSong.s_released}
+                type="number"
+                value={editedSong.s_released ?? ""}
                 onChange={handleChange}
                 placeholder="released"
               />
@@ -294,7 +300,7 @@ const SongComponent: React.FC<SongProps> = ({
             <div className="form-field years">
               <input
                 name="s_discovered"
-                value={editedSong.s_discovered}
+                value={editedSong.s_discovered ?? ""}
                 onChange={handleChange}
                 placeholder="discovered"
               />
@@ -305,7 +311,7 @@ const SongComponent: React.FC<SongProps> = ({
             <div className="form-field long">
               <input
                 name="s_comment"
-                value={editedSong.s_comment}
+                value={editedSong.s_comment ?? ""}
                 onChange={handleChange}
                 placeholder="comment"
               />

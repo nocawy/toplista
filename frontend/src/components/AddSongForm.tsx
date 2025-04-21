@@ -23,8 +23,8 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
     s_artist: "",
     s_title: "",
     s_album: "",
-    s_released: undefined,
-    s_discovered: undefined,
+    s_released: null,
+    s_discovered: "",
     s_comment: "",
     s_last_updated: new Date().toISOString(),
     s_created_on: new Date().toISOString(),
@@ -39,7 +39,12 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
     const { name, value } = e.target;
     setNewSong((prev) => ({
       ...prev,
-      [name]: value,
+      [name]:
+        name === "s_released"
+          ? value === ""
+            ? null
+            : parseInt(value, 10)
+          : value,
     }));
   };
 
@@ -66,8 +71,8 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
         s_artist: "",
         s_title: "",
         s_album: "",
-        s_released: undefined,
-        s_discovered: undefined,
+        s_released: null,
+        s_discovered: "",
         s_comment: "",
         // Assuming r_rank is sequential and there are no gaps
         r_rank: updatedSongsList.length + 1,
@@ -97,7 +102,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       <div className="form-field">
         <input
           name="s_artist"
-          value={newSong.s_artist}
+          value={newSong.s_artist ?? ""}
           onChange={handleChange}
           placeholder="Artist"
         />
@@ -115,7 +120,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       <div className="form-field">
         <input
           name="s_album"
-          value={newSong.s_album}
+          value={newSong.s_album ?? ""}
           onChange={handleChange}
           placeholder="Album"
         />
@@ -124,7 +129,8 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       <div className="form-field years">
         <input
           name="s_released"
-          value={newSong.s_released}
+          type="number"
+          value={newSong.s_released ?? ""}
           onChange={handleChange}
           placeholder="released"
         />
@@ -133,7 +139,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       <div className="form-field years">
         <input
           name="s_discovered"
-          value={newSong.s_discovered}
+          value={newSong.s_discovered ?? ""}
           onChange={handleChange}
           placeholder="discovered"
         />
@@ -144,7 +150,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       <div className="form-field long">
         <input
           name="s_comment"
-          value={newSong.s_comment}
+          value={newSong.s_comment ?? ""}
           onChange={handleChange}
           placeholder="comment"
         />

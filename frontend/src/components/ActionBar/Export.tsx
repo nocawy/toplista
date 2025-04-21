@@ -16,12 +16,12 @@ const ExportComponent: React.FC<ExportComponentProps> = ({ songs }) => {
       const row = [
         song.r_rank,
         song.s_yt_id,
-        escapeCSV(song.s_artist),
+        escapeCSV(song.s_artist ?? ""),
         escapeCSV(song.s_title),
-        escapeCSV(song.s_album),
+        escapeCSV(song.s_album ?? ""),
         song.s_released,
         song.s_discovered,
-        escapeCSV(song.s_comment),
+        escapeCSV(song.s_comment ?? ""),
       ].join(",");
       csvContent += row + "\n";
     });
