@@ -224,7 +224,8 @@ const SongComponent: React.FC<SongProps> = ({
               target="_blank"
               rel="noopener noreferrer"
             >
-              &#x23F5; {/* ⏵,  &#9654; &#x25B6; ▶ */}
+              &#x23F5;{/* ⏵,  &#9654; &#x25B6; ▶ */}
+              {isUnavailable && "x"}
             </a>
           </td>
           <td>{song.s_artist || "-"}</td>
