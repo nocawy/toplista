@@ -1,7 +1,7 @@
 # serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import Song
+from .models import Song, Ranking
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -19,12 +19,18 @@ class SongSerializer(serializers.ModelSerializer):
         return value
 
 
+class RankingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ranking
+        fields = [field.name for field in Ranking._meta.fields]
+
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, data):
-        user = authenticate(username=data.get('username'), password=data.get('password'))
+        user = authenticate(username=data.get("username"), password=data.get("password"))
         if user:
             return user
         raise serializers.ValidationError("Incorrect Username or Password.")

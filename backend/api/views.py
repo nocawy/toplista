@@ -9,13 +9,13 @@ import os
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Song, Ranking, RankingEntry
-from .serializers import LoginSerializer, SongSerializer
+from .serializers import LoginSerializer, SongSerializer, RankingSerializer
 
 
 def _get_selected_ranking(request) -> Ranking:
@@ -48,6 +48,24 @@ def song_lookup(request):
     if not song:
         return JsonResponse({"detail": "not found"}, status=404)
     return JsonResponse(SongSerializer(song).data, safe=False)
+
+
+class RankingList(generics.ListCreateAPIView):
+    queryset = Ranking.objects.all().order_by("created_on")
+    serializer_class = RankingSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+class RankingDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Ranking.objects.all()
+    serializer_class = RankingSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_destroy(self, instance: Ranking) -> None:
+        # Delete the ranking (cascades to RankingEntry), then cleanup orphan Songs
+        with transaction.atomic():
+            super().perform_destroy(instance)
+            Song.objects.filter(memberships__isnull=True).delete()
 
 
 @api_view(["PATCH"])
