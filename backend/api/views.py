@@ -38,6 +38,18 @@ class SongList(generics.ListAPIView):
         )
 
 
+@api_view(["GET"])
+def song_lookup(request):
+    """Lookup a global song by yt_id. Returns 200 with Song data or 404 if not found."""
+    yt_id = request.GET.get("yt_id")
+    if not yt_id:
+        return JsonResponse({"detail": "yt_id is required"}, status=400)
+    song = Song.objects.filter(s_yt_id=yt_id).first()
+    if not song:
+        return JsonResponse({"detail": "not found"}, status=404)
+    return JsonResponse(SongSerializer(song).data, safe=False)
+
+
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_rank(request):
