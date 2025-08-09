@@ -12,9 +12,10 @@ import { useAuth } from "../../contexts/AuthContext";
 interface ActionBarProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  onRandomSelected?: (selectedSongIds: number[]) => void;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs }) => {
+const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected }) => {
   const top50Link = useTop50Link(songs);
   const { isLoggedIn } = useAuth();
 
@@ -24,7 +25,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs }) => {
         <PlayTop50 link={top50Link} />
       </div>
       <div className="nav-item">
-        <PlayRandom50 songs={songs} />
+        <PlayRandom50 songs={songs} onRandomSelected={onRandomSelected} />
       </div>
       <div className="nav-item">
         {isLoggedIn ? <ImportComponent setSongs={setSongs} /> : <br />}

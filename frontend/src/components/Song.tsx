@@ -40,6 +40,7 @@ interface SongProps {
   index: number; // row number
   songsCount: number;
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  isRandomSelected?: boolean;
 }
 
 const SongComponent: React.FC<SongProps> = ({
@@ -47,6 +48,7 @@ const SongComponent: React.FC<SongProps> = ({
   index,
   songsCount,
   setSongs,
+  isRandomSelected = false,
 }) => {
   const { isLoggedIn } = useAuth();
 
@@ -177,7 +179,11 @@ const SongComponent: React.FC<SongProps> = ({
   };
 
   return (
-    <tr ref={setNodeRef} style={style}>
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={isRandomSelected ? "random-selected" : ""}
+    >
       {!isEditing || !isLoggedIn ? (
         <>
           <td>

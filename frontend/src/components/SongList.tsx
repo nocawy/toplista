@@ -25,9 +25,10 @@ import { useAuth } from "../contexts/AuthContext";
 interface SongListProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  selectedRandomIds?: number[];
 }
 
-const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
+const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds }) => {
   const { isLoggedIn } = useAuth();
 
   const sensors = useSensors(
@@ -108,6 +109,7 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs }) => {
                   index={index + 1} // pass index+1 so that numbering starts with 1
                   songsCount={songs.length}
                   setSongs={setSongs}
+                  isRandomSelected={selectedRandomIds?.includes(song.id) ?? false}
                 />
               ))}
             </SortableContext>

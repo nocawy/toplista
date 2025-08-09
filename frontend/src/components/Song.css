@@ -16,3 +16,8 @@
   text-decoration: line-through;
   opacity: 0.7;
 }
+
+/* Highlight rows selected by PlayRandom50 */
+tr.random-selected {
+  background-color: rgba(255, 215, 0, 0.25); /* light gold */
+}
