@@ -8,6 +8,7 @@ import ImportComponent from "./Import";
 import ExportComponent from "./Export";
 import LoginForm from "./LoginForm";
 import { useAuth } from "../../contexts/AuthContext";
+import RankingSwitcher from "./RankingSwitcher";
 
 interface ActionBarProps {
   songs: Song[];
@@ -21,6 +22,9 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected
 
   return (
     <nav className="ActionBar">
+      <div className="nav-item">
+        <RankingSwitcher />
+      </div>
       <div className="nav-item">
         <PlayTop50 link={top50Link} />
       </div>

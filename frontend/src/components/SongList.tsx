@@ -21,6 +21,7 @@ import SongComponent, { Song } from "./Song";
 import AddSongForm from "./AddSongForm";
 import { updateSongRank, addNewSong, fetchSongs } from "../api/songService";
 import { useAuth } from "../contexts/AuthContext";
+import { useRanking } from "../contexts/RankingContext";
 
 interface SongListProps {
   songs: Song[];
@@ -30,6 +31,7 @@ interface SongListProps {
 
 const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds }) => {
   const { isLoggedIn } = useAuth();
+  const { currentSlug } = useRanking();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -88,6 +90,7 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds 
         </thead>
         <tbody>
           <DndContext
+            key={currentSlug}
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -99,6 +102,7 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds 
             ]}
           >
             <SortableContext
+              key={currentSlug}
               items={songs.map((song) => song.id)}
               strategy={verticalListSortingStrategy}
             >

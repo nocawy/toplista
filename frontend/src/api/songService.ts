@@ -1,10 +1,12 @@
 // api/songService.ts
 import apiClient from "./apiClient";
 import { Song } from "../components/Song";
+import { getCurrentRankingSlug } from "./utilRanking";
 
-export const fetchSongs = async (): Promise<Song[]> => {
+export const fetchSongs = async (slugParam?: string): Promise<Song[]> => {
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}songs/`);
+    const slug = slugParam ?? getCurrentRankingSlug();
+    const response = await fetch(`${process.env.REACT_APP_API_URL}songs/?list=${encodeURIComponent(slug)}`);
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -23,7 +25,8 @@ interface SongUpdate {
 
 export const updateSongRank = async (songUpdate: SongUpdate) => {
   try {
-    const response = await apiClient.patch("update/rank/", songUpdate);
+    const slug = getCurrentRankingSlug();
+    const response = await apiClient.patch(`update/rank/?list=${encodeURIComponent(slug)}`, songUpdate);
     console.log("Successfully updated the song: ", response.data);
   } catch (error) {
     console.error("Error updateSongRank:", error);
@@ -33,7 +36,8 @@ export const updateSongRank = async (songUpdate: SongUpdate) => {
 
 export const addNewSong = async (newSong: Omit<Song, "id">): Promise<void> => {
   try {
-    const response = await apiClient.post("songs/add/", newSong);
+    const slug = getCurrentRankingSlug();
+    const response = await apiClient.post(`songs/add/?list=${encodeURIComponent(slug)}`, newSong);
     console.log("Successfully added new song:", response.data);
   } catch (error) {
     console.error("Error addNewSong:", error);
@@ -53,7 +57,8 @@ export const updateSong = async (song: Song): Promise<void> => {
 
 export const deleteSong = async (songId: number): Promise<void> => {
   try {
-    const response = await apiClient.delete(`songs/delete/${songId}`);
+    const slug = getCurrentRankingSlug();
+    const response = await apiClient.delete(`songs/delete/${songId}/?list=${encodeURIComponent(slug)}`);
     console.log("Song deleted successfully:", response.data);
   } catch (error) {
     console.error("Error deleteSong:", error);
