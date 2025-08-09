@@ -1,6 +1,6 @@
 # views.py
 from django.core.management import call_command
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import F, Max
 from django.http import JsonResponse
 import json
@@ -14,13 +14,28 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Rank, Song
+from .models import Song, Ranking, RankingEntry
 from .serializers import LoginSerializer, SongSerializer
 
 
+def _get_selected_ranking(request) -> Ranking:
+    """Resolve ranking from query params; default to 'main'."""
+    slug = request.GET.get("list") or request.GET.get("ranking") or "main"
+    ranking, _ = Ranking.objects.get_or_create(slug=slug, defaults={"name": slug})
+    return ranking
+
+
 class SongList(generics.ListAPIView):
-    queryset = Song.objects.all().order_by("rank__r_rank")
     serializer_class = SongSerializer
+
+    def get_queryset(self):
+        ranking = _get_selected_ranking(self.request)
+        # Return songs that belong to the selected ranking, annotated with r_rank
+        return (
+            Song.objects.filter(memberships__ranking=ranking)
+            .annotate(r_rank=F("memberships__r_rank"))
+            .order_by("r_rank")
+        )
 
 
 @api_view(["PATCH"])
@@ -50,36 +65,58 @@ def update_rank(request):
     if request.method == "PATCH":
         try:
             data = json.loads(request.body)
+            ranking = _get_selected_ranking(request)
 
             # Ensure newRank stays within [1, total_songs]
-            total_songs = Song.objects.count()
+            total_songs = RankingEntry.objects.filter(ranking=ranking).count()
             newRank: int = data["newRank"]
             if newRank < 1:
                 newRank = 1
             elif newRank > total_songs:
                 newRank = total_songs
 
-            # Retrieve the rank object based on the song ID provided in the request
-            rank = Rank.objects.get(song__id=data["songId"])
-            oldRank: int = rank.r_rank
+            # Retrieve the ranking entry for the provided song within the selected ranking
+            with transaction.atomic():
+                entry = RankingEntry.objects.select_for_update().get(ranking=ranking, song__id=data["songId"])
+                oldRank: int = entry.r_rank
 
-            # If the new rank is higher than the old rank, decrement ranks between them
-            if oldRank < newRank:
-                ranks_to_update = Rank.objects.filter(r_rank__range=(oldRank + 1, newRank))
-                ranks_to_update.update(r_rank=F("r_rank") - 1)
-            # If the new rank is lower than the old rank, increment ranks between them
-            elif oldRank > newRank:
-                ranks_to_update = Rank.objects.filter(r_rank__range=(newRank, oldRank - 1))
-                ranks_to_update.update(r_rank=F("r_rank") + 1)
+                if oldRank == newRank:
+                    return JsonResponse({"status": "success", "song_id": entry.song.id, "r_rank": entry.r_rank})
 
-            # Update this song's rank only after shifting others within the new/old rank range
-            rank.r_rank = newRank
-            rank.save()
-            return JsonResponse({"status": "success", "song_id": rank.song.id, "r_rank": rank.r_rank})
-        except Rank.DoesNotExist:
-            return JsonResponse(
-                {"status": "error", "message": "Rank for the specified song does not exist"}, status=404
-            )
+                TEMP_SHIFT = 1_000_000
+
+                if oldRank < newRank:
+                    # Bump the affected range far away to create space
+                    RankingEntry.objects.filter(ranking=ranking, r_rank__gt=oldRank, r_rank__lte=newRank).update(
+                        r_rank=F("r_rank") + TEMP_SHIFT
+                    )
+
+                    # Place the entry into target slot
+                    entry.r_rank = newRank
+                    entry.save(update_fields=["r_rank"])
+
+                    # Collapse the bumped range back by TEMP_SHIFT+1, effectively shifting -1
+                    RankingEntry.objects.filter(
+                        ranking=ranking, r_rank__gt=oldRank + TEMP_SHIFT, r_rank__lte=newRank + TEMP_SHIFT
+                    ).update(r_rank=F("r_rank") - (TEMP_SHIFT + 1))
+                else:
+                    # Bump the affected range far away to create space
+                    RankingEntry.objects.filter(ranking=ranking, r_rank__gte=newRank, r_rank__lt=oldRank).update(
+                        r_rank=F("r_rank") + TEMP_SHIFT
+                    )
+
+                    # Place the entry into target slot
+                    entry.r_rank = newRank
+                    entry.save(update_fields=["r_rank"])
+
+                    # Collapse the bumped range back by TEMP_SHIFT-1, effectively shifting +1
+                    RankingEntry.objects.filter(
+                        ranking=ranking, r_rank__gte=newRank + TEMP_SHIFT, r_rank__lt=oldRank + TEMP_SHIFT
+                    ).update(r_rank=F("r_rank") - (TEMP_SHIFT - 1))
+
+            return JsonResponse({"status": "success", "song_id": entry.song.id, "r_rank": entry.r_rank})
+        except RankingEntry.DoesNotExist:
+            return JsonResponse({"status": "error", "message": "Song is not part of the selected ranking"}, status=404)
         except KeyError as e:
             return JsonResponse({"status": "error", "message": f"Missing key in request: {str(e)}"}, status=400)
         except Exception as e:
@@ -122,7 +159,9 @@ class UploadCSV(APIView):
                     destination.write(chunk)
 
             try:
-                call_command("import_songs", file_path)
+                # Choose ranking from query params, default to 'main'
+                ranking = _get_selected_ranking(request)
+                call_command("import_songs", file_path, ranking=ranking.slug)
                 return JsonResponse({"status": "success"}, status=200)
             except Exception as e:
                 return JsonResponse({"status": "error", "message": str(e)}, status=500)
@@ -135,24 +174,42 @@ class AddSong(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        serializer = SongSerializer(data=request.data)
-        if serializer.is_valid():
+        ranking = _get_selected_ranking(request)
+
+        data = request.data.copy()
+        yt_id = data.get("s_yt_id")
+        if not yt_id:
+            return Response({"s_yt_id": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Try to find existing song by yt_id
+        existing = Song.objects.filter(s_yt_id=yt_id).first()
+        if existing:
+            song = existing
+        else:
+            serializer = SongSerializer(data=data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             try:
                 song = serializer.save()
-                # Retrieve the highest current rank and calculate the new rank
-                highest_rank = Rank.objects.aggregate(Max("r_rank"))["r_rank__max"] or 0
-                new_rank_value = highest_rank + 1
-                # Create a Rank instance for the new song
-                Rank.objects.create(song=song, r_rank=new_rank_value)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
             except IntegrityError as e:
-                # Handle possible integrity errors, e.g., unique constraint violation
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            # Include both serializer errors and any additional error messages
-            errors = serializer.errors
-            # errors.update({'additional_error': 'Custom error message or additional info'})
-            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Now attach to ranking with next rank
+        try:
+            with transaction.atomic():
+                if RankingEntry.objects.filter(ranking=ranking, song=song).exists():
+                    return Response(
+                        {"error": "Song already exists in this ranking."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                highest = RankingEntry.objects.filter(ranking=ranking).aggregate(Max("r_rank"))["r_rank__max"] or 0
+                new_rank_value = highest + 1
+                RankingEntry.objects.create(ranking=ranking, song=song, r_rank=new_rank_value)
+        except IntegrityError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Return the created/attached song representation
+        return Response(SongSerializer(song).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["PATCH"])
@@ -173,21 +230,32 @@ def update_song(request, pk):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_song(request, pk):
+    ranking = _get_selected_ranking(request)
     try:
-        # Find the song to be deleted
-        song = Song.objects.get(pk=pk)
-        rank_to_delete = song.rank.r_rank
-        song.delete()
+        with transaction.atomic():
+            song = Song.objects.get(pk=pk)
+            # Remove only from the selected ranking
+            entry = RankingEntry.objects.get(ranking=ranking, song=song)
+            deleted_rank = entry.r_rank
+            entry.delete()
 
-        # Update the ranking of the remaining songs that had a higher ranking
-        Rank.objects.filter(r_rank__gt=rank_to_delete).update(r_rank=F("r_rank") - 1)
+            # Update ranks of remaining songs in this ranking
+            RankingEntry.objects.filter(ranking=ranking, r_rank__gt=deleted_rank).update(r_rank=F("r_rank") - 1)
+
+            # If song is no longer used in any ranking, delete it
+            if not song.memberships.exists():
+                song.delete()
 
         return JsonResponse(
-            {"status": "success", "message": f"Song with id {pk} deleted successfully."},
+            {"status": "success", "message": f"Song with id {pk} removed from ranking {ranking.slug}."},
             status=status.HTTP_204_NO_CONTENT,
         )
     except Song.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Song not found."}, status=status.HTTP_404_NOT_FOUND)
+    except RankingEntry.DoesNotExist:
+        return JsonResponse(
+            {"status": "error", "message": "Song is not in this ranking."}, status=status.HTTP_404_NOT_FOUND
+        )
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

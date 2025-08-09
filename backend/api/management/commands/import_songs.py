@@ -1,30 +1,34 @@
 import csv
 from django.core.management.base import BaseCommand
-from django.db import IntegrityError, DataError
-from api.models import Song, Rank
+from django.db import IntegrityError, DataError, transaction
+from api.models import Song, Ranking, RankingEntry
 
 class Command(BaseCommand):
-    help = 'Import songs and their ranks from a CSV file. Note: removes all existing songs before importing.'
+    help = 'Import songs and ranks from a CSV into a specific ranking (does not wipe global songs).'
 
     def print_usage(self):
         usage_text = """
-        Usage: python manage.py import_songs path/to/file.csv
+        Usage: python manage.py import_songs path/to/file.csv [--ranking <slug>]
 
-        This script imports songs and their ranks from a specified CSV file into the Django database.
-        The CSV file must include the following headers: yt_id, Artist, Title, Album, released, discovered, comment, rank.
+        This command imports songs and their ranks into a given ranking (default: 'main').
+        The CSV must include headers: yt_id, Artist, Title, Album, released, discovered, comment, rank.
 
-        Attention: This script performs a clean import by removing all existing songs from the database before importing new data.
-                
+        Behavior:
+          - Deletes existing entries only within the target ranking, keeping global Song data intact.
+          - Creates missing songs by yt_id; does not update global metadata for existing songs.
+
         Example:
-            python manage.py import_songs path/to/songs.csv
+            python manage.py import_songs path/to/songs.csv --ranking 2025
         """
         self.stdout.write(self.style.NOTICE(usage_text))
 
     def add_arguments(self, parser):
         parser.add_argument('csv_file_path', type=str, nargs='?', help='The path to the CSV file')
+        parser.add_argument('--ranking', type=str, default='main', help='Ranking slug to import into (default: main)')
 
     def handle(self, *args, **kwargs):
         csv_file_path = kwargs['csv_file_path']
+        ranking_slug = kwargs.get('ranking') or 'main'
 
         if not csv_file_path:
             self.print_usage()
@@ -83,37 +87,40 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS('Data validation passed. Proceeding with import...'))
 
-            # WARNING: This will remove all existing Song and Rank data from the database
-            Song.objects.all().delete()
-            Rank.objects.all().delete()
-            
-            # Insert new data into database
-            for row in valid_rows:
-                try:
-                    song = Song(
-                        s_yt_id=row['yt_id'],
-                        s_artist=row['Artist'],
-                        s_title=row['Title'],
-                        s_album=row.get('Album', ''),  # Using .get() ensures no error if the album field is empty
-                        s_released=row['released'],
-                        s_discovered=row.get('discovered', ''), # Same as above
-                        s_comment=row.get('comment', '')  # Same as above
-                    )
-                    song.save()
+            ranking, _ = Ranking.objects.get_or_create(slug=ranking_slug, defaults={'name': ranking_slug})
 
-                    rank = Rank(
-                        song=song,
-                        r_rank=row['rank']
-                    )
-                    rank.save()
+            # Replace entries only in this ranking, keep global Song data intact
+            with transaction.atomic():
+                RankingEntry.objects.filter(ranking=ranking).delete()
 
-                except IntegrityError as e:
-                    self.stdout.write(self.style.ERROR(f'Integrity error for {row.get("yt_id")}: {e}'))
-                except DataError as e:
-                    self.stdout.write(self.style.ERROR(f'Data error for {row.get("yt_id")}: {e}'))
-                except ValueError as e:
-                    self.stdout.write(self.style.ERROR(f'Value error for {row.get("yt_id")}: {e}'))
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f'Unexpected error: {e}'))
+                # Insert new data into database
+                for row in valid_rows:
+                    try:
+                        song, created = Song.objects.get_or_create(
+                            s_yt_id=row['yt_id'],
+                            defaults={
+                                's_artist': row['Artist'],
+                                's_title': row['Title'],
+                                's_album': row.get('Album', ''),
+                                's_released': row['released'],
+                                's_discovered': row.get('discovered', ''),
+                                's_comment': row.get('comment', ''),
+                            }
+                        )
 
-        self.stdout.write(self.style.SUCCESS('Successfully imported songs and ranks from CSV'))
+                        RankingEntry.objects.create(
+                            ranking=ranking,
+                            song=song,
+                            r_rank=row['rank']
+                        )
+
+                    except IntegrityError as e:
+                        self.stdout.write(self.style.ERROR(f'Integrity error for {row.get("yt_id")}: {e}'))
+                    except DataError as e:
+                        self.stdout.write(self.style.ERROR(f'Data error for {row.get("yt_id")}: {e}'))
+                    except ValueError as e:
+                        self.stdout.write(self.style.ERROR(f'Value error for {row.get("yt_id")}: {e}'))
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f'Unexpected error: {e}'))
+
+        self.stdout.write(self.style.SUCCESS(f'Successfully imported songs into ranking {ranking_slug}'))
