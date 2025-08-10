@@ -20,7 +20,7 @@ import {
   updateSongRank,
 } from "../api/songService";
 import { useAuth } from "../contexts/AuthContext";
-import { extractYouTubeId } from "../utils/youtube";
+import { parseSongFieldInput } from "../utils/parsers";
 
 export interface Song {
   id: number;
@@ -118,15 +118,10 @@ const SongComponent: React.FC<SongProps> = ({
       return setrankInput(parseInt(e.target.value, 10));
     }
     const { name, value } = e.target;
-    const parsedValue = name === "s_yt_id" ? extractYouTubeId(value) : value;
+    const parsedValue = parseSongFieldInput(name, value);
     setEditedSong((prev) => ({
       ...prev,
-      [name]:
-        name === "s_released"
-          ? parsedValue === ""
-            ? null
-            : parseInt(parsedValue as string, 10)
-          : parsedValue,
+      [name]: parsedValue,
     }));
   };
 

@@ -5,7 +5,7 @@ import "./AddSongForm.css";
 import { fetchSongs } from "../api/songService";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { extractYouTubeId } from "../utils/youtube";
+import { parseSongFieldInput } from "../utils/parsers";
 
 interface AddSongFormProps {
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
@@ -38,16 +38,10 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    const parsedValue = name === "s_yt_id" ? extractYouTubeId(value) : value;
-
+    const parsedValue = parseSongFieldInput(name, value);
     setNewSong((prev) => ({
       ...prev,
-      [name]:
-        name === "s_released"
-          ? parsedValue === ""
-            ? null
-            : parseInt(parsedValue as string, 10)
-          : parsedValue,
+      [name]: parsedValue,
     }));
   };
 
