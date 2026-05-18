@@ -22,21 +22,25 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected
 
   return (
     <nav className="ActionBar">
-      <div className="nav-item ranking-nav-item">
+      <div className="actionbar-left">
         <RankingSwitcher />
       </div>
-      <div className="nav-item">
-        <PlayTop50 link={top50Link} />
+      <div className="actionbar-center">
+        <div className="nav-item">
+          <PlayTop50 link={top50Link} />
+        </div>
+        <div className="nav-item">
+          <PlayRandom50 songs={songs} onRandomSelected={onRandomSelected} />
+        </div>
       </div>
-      <div className="nav-item">
-        <PlayRandom50 songs={songs} onRandomSelected={onRandomSelected} />
-      </div>
-      <div className="nav-item">
-        {isLoggedIn ? <ImportComponent setSongs={setSongs} /> : <br />}
-        <ExportComponent songs={songs} />
-      </div>
-      <div className="nav-item">
-        <LoginForm />
+      <div className="actionbar-right">
+        <div className="nav-item">
+          {isLoggedIn ? <ImportComponent setSongs={setSongs} /> : <br />}
+          <ExportComponent songs={songs} />
+        </div>
+        <div className="nav-item">
+          <LoginForm />
+        </div>
       </div>
     </nav>
   );
