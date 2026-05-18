@@ -189,6 +189,7 @@ const SongComponent: React.FC<SongProps> = ({
             </div>
           </td>
           <td
+            className={isLoggedIn ? "rank-cell rank-cell-editable" : "rank-cell"}
             onClick={() => {
               if (!isLoggedIn) return;
               setrankInput(song.r_rank);
@@ -227,7 +228,7 @@ const SongComponent: React.FC<SongProps> = ({
               target="_blank"
               rel="noopener noreferrer"
             >
-              &#x23F5;{/* ⏵,  &#9654; &#x25B6; ▶ */}
+              &#x23F5;{/* ⏵ */}
               {isUnavailable && "x"}
             </a>
           </td>

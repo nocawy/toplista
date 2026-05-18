@@ -27,7 +27,9 @@ tr:nth-child(odd) {
 
 /* Drag handle */
 .drag-handle {
-  margin-left: 4px;
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 2px;
   margin-right: 2px;
   cursor: grab;
 }
@@ -38,6 +40,10 @@ tr:nth-child(odd) {
 
 /* Play ⏵ link */
 .play-link {
+  display: inline-flex;
+  justify-content: center;
+  border-radius: 3px;
+  min-width: 28px;
   color: black;
   text-decoration: none;
   cursor: pointer;
@@ -45,6 +51,16 @@ tr:nth-child(odd) {
 
 .play-link:hover,
 .play-link:active {
+  background: rgba(76, 175, 80, 0.12);
+  color: #4caf50;
+}
+
+.rank-cell-editable {
+  border-radius: 3px;
+}
+
+.rank-cell-editable:hover {
+  background: rgba(76, 175, 80, 0.12);
   color: #4caf50;
 }
 
