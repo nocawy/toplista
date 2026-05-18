@@ -27,8 +27,8 @@ const LoginForm: React.FC = () => {
 
   if (isLoggedIn) {
     return (
-      <div>
-        {`logged in as ${username}`}
+      <div className="login-status">
+        {username}
         <br />
         <button onClick={logout} className="text-button">
           log out
@@ -38,7 +38,7 @@ const LoginForm: React.FC = () => {
   }
 
   return (
-    <form onSubmit={submitForm}>
+    <form onSubmit={submitForm} className="login-controls">
       <div>
         <input
           className="login-form"

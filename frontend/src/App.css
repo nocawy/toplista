@@ -13,6 +13,11 @@
   color: white;
 }
 
+.App-header h1 {
+  font-size: clamp(1.8rem, 4vmin, 2.6rem);
+  margin: 0.5em 0;
+}
+
 .error {
   color: red;
   font-size: 0.8em;

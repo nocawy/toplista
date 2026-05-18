@@ -35,10 +35,14 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected
       </div>
       <div className="actionbar-right">
         <div className="nav-item">
-          {isLoggedIn ? <ImportComponent setSongs={setSongs} /> : <br />}
+          {isLoggedIn ? (
+            <ImportComponent setSongs={setSongs} />
+          ) : (
+            <span className="nav-link actionbar-placeholder">csv import</span>
+          )}
           <ExportComponent songs={songs} />
         </div>
-        <div className="nav-item">
+        <div className="nav-item actionbar-login-item">
           <LoginForm />
         </div>
       </div>

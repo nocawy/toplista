@@ -31,6 +31,15 @@
   gap: 24px;
 }
 
+.actionbar-login-item {
+  width: 8em;
+}
+
+.actionbar-placeholder {
+  display: block;
+  visibility: hidden;
+}
+
 .ranking-switcher {
   min-width: 0;
 }
@@ -90,8 +99,21 @@
 }
 
 .login-form {
-  max-width: 7em;
-  width: "100%";
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  line-height: 1.1;
+}
+
+.login-controls,
+.login-status {
+  width: 100%;
+  line-height: 1.2;
+}
+
+.login-controls .text-button,
+.login-status .text-button {
+  white-space: nowrap;
 }
 
 .text-button {
