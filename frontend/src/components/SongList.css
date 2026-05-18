@@ -9,6 +9,18 @@ th {
   background-color: white;
 }
 
+.song-actions-column {
+  width: 24px;
+  min-width: 24px;
+}
+
+.song-actions-column .form-field.button {
+  min-width: 18px;
+  max-width: 18px;
+  width: 18px;
+  margin: 0 auto;
+}
+
 tr:nth-child(odd) {
   background-color: #f3f3f3;
 }
@@ -34,4 +46,11 @@ tr:nth-child(odd) {
 .play-link:hover,
 .play-link:active {
   color: #4caf50;
+}
+
+.song-action-placeholder {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  overflow: hidden;
 }

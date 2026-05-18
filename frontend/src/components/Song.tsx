@@ -237,15 +237,17 @@ const SongComponent: React.FC<SongProps> = ({
           <td>{song.s_released || "-"}</td>
           <td>{song.s_discovered || "-"}</td>
           <td>{song.s_comment || "-"}</td>
-          {isLoggedIn && (
-            <td>
+          <td className="song-actions-column">
+            {isLoggedIn ? (
               <div className="form-field button">
-                <button onClick={() => setIsEditing(true)}>
+                <button className="icon-button" onClick={() => setIsEditing(true)}>
                   <FontAwesomeIcon icon={faEdit} /> {/* edit */}
                 </button>
               </div>
-            </td>
-          )}
+            ) : (
+              <span className="song-action-placeholder" aria-hidden="true" />
+            )}
+          </td>
         </>
       ) : (
         // Song edit form

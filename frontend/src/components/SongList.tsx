@@ -86,6 +86,7 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds 
             <th>Rok wydania</th>
             <th>Rok odkrycia</th>
             <th>Komentarz</th>
+            <th className="song-actions-column"></th>
           </tr>
         </thead>
         <tbody>
