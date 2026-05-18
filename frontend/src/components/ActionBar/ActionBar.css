@@ -1,5 +1,7 @@
 .ActionBar {
   display: flex;
+  align-items: center;
+  gap: 12px;
   justify-content: space-between;
   padding: 10px;
   background-color: #474c57;
@@ -7,8 +9,57 @@
 }
 
 .nav-item {
-  flex-grow: 1;
+  flex: 1 1 auto;
   text-align: center;
+}
+
+.ranking-nav-item {
+  flex: 2 1 360px;
+  min-width: 0;
+  text-align: left;
+}
+
+.ranking-switcher {
+  min-width: 0;
+}
+
+.ranking-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ranking-tab {
+  flex: 0 0 auto;
+  background-color: #363b45;
+  color: white;
+  border: 1px solid #626977;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  padding: 6px 10px;
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ranking-tab:hover,
+.ranking-tab:focus-visible {
+  color: #4caf50;
+}
+
+.ranking-tab-active {
+  background-color: white;
+  color: #222;
+  border-color: white;
+  border-bottom-color: #4caf50;
+}
+
+.ranking-tab-new {
+  background-color: transparent;
+  border-style: dashed;
 }
 
 .nav-link {
@@ -43,4 +94,60 @@
 .text-button:hover,
 .text-button:active {
   color: #4caf50;
+}
+
+.ranking-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.ranking-dialog {
+  min-width: 280px;
+  max-width: 420px;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #474c57;
+  color: white;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.ranking-dialog h2 {
+  margin-top: 0;
+}
+
+.ranking-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.ranking-dialog-field input {
+  padding: 6px 8px;
+}
+
+.ranking-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ranking-dialog-submit {
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  background-color: #4caf50;
+  color: white;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.ranking-dialog-submit:disabled {
+  cursor: default;
+  opacity: 0.6;
 }

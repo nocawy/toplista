@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Ranking } from "../../api/utilRanking";
 import apiClient from "../../api/apiClient";
 import "./ActionBar.css";
 import { useRanking } from "../../contexts/RankingContext";
+import { useAuth } from "../../contexts/AuthContext";
+import CreateRankingDialog from "./CreateRankingDialog";
 
 const RankingSwitcher: React.FC = () => {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const { currentSlug, setCurrentSlug } = useRanking();
-  const [newName, setNewName] = useState<string>("");
-  const [newSlug, setNewSlug] = useState<string>("");
+  const { isLoggedIn } = useAuth();
+  const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
 
   const loadRankings = async () => {
     const resp = await apiClient.get<Ranking[]>("rankings/");
@@ -19,54 +21,44 @@ const RankingSwitcher: React.FC = () => {
     loadRankings();
   }, []);
 
-  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const slug = e.target.value;
-    setCurrentSlug(slug);
-  };
-
-  const canCreate = useMemo(() => newName.trim().length > 0 && newSlug.trim().length > 0, [newName, newSlug]);
-
-  const createRanking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canCreate) return;
-    await apiClient.post("rankings/", { name: newName.trim(), slug: newSlug.trim() });
-    setNewName("");
-    setNewSlug("");
+  const handleCreated = async (ranking: Ranking) => {
     await loadRankings();
-    setCurrentSlug(newSlug.trim());
+    setCurrentSlug(ranking.slug);
   };
 
   return (
-    <div className="nav-item" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <select value={currentSlug} onChange={handleChange}>
+    <div className="ranking-switcher">
+      <div className="ranking-tabs" role="tablist" aria-label="Rankings">
         {rankings.map((r) => (
-          <option key={r.id} value={r.slug}>
+          <button
+            key={r.id}
+            type="button"
+            role="tab"
+            aria-selected={r.slug === currentSlug}
+            className={`ranking-tab${r.slug === currentSlug ? " ranking-tab-active" : ""}`}
+            onClick={() => setCurrentSlug(r.slug)}
+          >
             {r.name}
-          </option>
+          </button>
         ))}
-      </select>
-
-      <form onSubmit={createRanking} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <input
-          placeholder="New ranking name"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          style={{ width: 140 }}
-        />
-        <input
-          placeholder="slug"
-          value={newSlug}
-          onChange={(e) => setNewSlug(e.target.value)}
-          style={{ width: 100 }}
-        />
-        <button type="submit" disabled={!canCreate} className="nav-link">
-          +
-        </button>
-      </form>
+        {isLoggedIn && (
+          <button
+            type="button"
+            className="ranking-tab ranking-tab-new"
+            onClick={() => setIsCreateOpen(true)}
+            aria-label="Create ranking"
+          >
+            +
+          </button>
+        )}
+      </div>
+      <CreateRankingDialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreated={handleCreated}
+      />
     </div>
   );
 };
 
 export default RankingSwitcher;
-
-

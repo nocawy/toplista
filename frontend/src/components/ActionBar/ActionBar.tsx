@@ -22,7 +22,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected
 
   return (
     <nav className="ActionBar">
-      <div className="nav-item">
+      <div className="nav-item ranking-nav-item">
         <RankingSwitcher />
       </div>
       <div className="nav-item">
