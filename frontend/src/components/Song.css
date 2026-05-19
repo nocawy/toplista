@@ -43,3 +43,44 @@ tr.random-selected {
 .icon-button:active {
   color: #4caf50;
 }
+
+.song-edit-cell {
+  position: relative;
+}
+
+.song-edit-cell::before {
+  content: "\00a0";
+  visibility: hidden;
+}
+
+.song-edit-row {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  font-size: 0.95em;
+}
+
+.song-edit-row .form-field {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.song-edit-row .form-field input,
+.song-edit-row .form-field button {
+  height: 100%;
+  padding: 0 2px;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.song-edit-row .form-field.button button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.song-edit-row .form-field.button button:hover,
+.song-edit-row .form-field.button button:active {
+  color: #4caf50;
+}
