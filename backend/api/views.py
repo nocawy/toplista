@@ -283,17 +283,20 @@ def delete_song(request, pk):
             deleted_rank = entry.r_rank
             entry.delete()
 
-            # Update ranks of remaining songs in this ranking
-            RankingEntry.objects.filter(ranking=ranking, r_rank__gt=deleted_rank).update(r_rank=F("r_rank") - 1)
+            # Move ranks out of the way before compacting to avoid unique rank collisions.
+            TEMP_SHIFT = 1_000_000
+            RankingEntry.objects.filter(ranking=ranking, r_rank__gt=deleted_rank).update(
+                r_rank=F("r_rank") + TEMP_SHIFT
+            )
+            RankingEntry.objects.filter(ranking=ranking, r_rank__gt=deleted_rank + TEMP_SHIFT).update(
+                r_rank=F("r_rank") - (TEMP_SHIFT + 1)
+            )
 
             # If song is no longer used in any ranking, delete it
             if not song.memberships.exists():
                 song.delete()
 
-        return JsonResponse(
-            {"status": "success", "message": f"Song with id {pk} removed from ranking {ranking.slug}."},
-            status=status.HTTP_204_NO_CONTENT,
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
     except Song.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Song not found."}, status=status.HTTP_404_NOT_FOUND)
     except RankingEntry.DoesNotExist:
