@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useRanking } from "./contexts/RankingContext";
 import Footer from "./components/Footer";
 import EmbeddedPlayerPanel from "./components/EmbeddedPlayer/EmbeddedPlayerPanel";
+import { useMediaSession } from "./hooks/useMediaSession";
 import { usePlaybackQueue } from "./hooks/usePlaybackQueue";
 
 function App() {
@@ -26,6 +27,14 @@ function App() {
     canGoNext,
     canGoPrevious,
   } = usePlaybackQueue(songs, currentSlug);
+
+  useMediaSession({
+    currentSong: currentDisplaySong,
+    canGoNext,
+    canGoPrevious,
+    onNext: playNext,
+    onPrevious: playPrevious,
+  });
 
   const focusPlayingSong = () => {
     if (currentDisplaySong) {
