@@ -1,3 +1,4 @@
+import { forwardRef, useImperativeHandle } from "react";
 import {
   DndContext,
   closestCenter,
@@ -31,7 +32,14 @@ interface SongListProps {
   onPlaySong: (song: Song) => void;
 }
 
-const SongList: React.FC<SongListProps> = ({ songs, setSongs, queuedSongIds, currentSongId, onPlaySong }) => {
+export interface SongListHandle {
+  scrollToSong: (songId: number) => void;
+}
+
+const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
+  { songs, setSongs, queuedSongIds, currentSongId, onPlaySong },
+  ref
+) {
   const { isLoggedIn } = useAuth();
   const { currentSlug } = useRanking();
 
@@ -43,6 +51,15 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, queuedSongIds, cur
       },
     })
   );
+
+  useImperativeHandle(ref, () => ({
+    scrollToSong: (songId: number) => {
+      document.getElementById(`song-row-${songId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    },
+  }));
 
   const handleDragStart = (event: any) => {
     document.body.style.cursor = "grabbing";
@@ -137,6 +154,6 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, queuedSongIds, cur
       )}
     </div>
   );
-};
+});
 
 export default SongList;

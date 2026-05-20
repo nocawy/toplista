@@ -1,7 +1,7 @@
 import "./App.css";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import ActionBar from "./components/ActionBar/ActionBar";
-import SongList from "./components/SongList";
+import SongList, { SongListHandle } from "./components/SongList";
 import { Song } from "./components/Song";
 import useSongs from "./hooks/useSongs";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -10,6 +10,7 @@ import EmbeddedPlayerPanel from "./components/EmbeddedPlayer/EmbeddedPlayerPanel
 
 function App() {
   const { songs, setSongs } = useSongs();
+  const songListRef = useRef<SongListHandle>(null);
   const [queuedSongIds, setQueuedSongIds] = useState<number[]>([]);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const queue = songs.filter((song) => queuedSongIds.includes(song.id));
@@ -112,13 +113,26 @@ function App() {
     currentDisplaySong !== null &&
     (currentQueueIndex >= 0 ? currentQueueIndex > 0 : findEarlierQueuedIndex(currentDisplaySong) >= 0);
 
+  const playbackPositionLabel =
+    currentDisplaySong && currentQueueIndex >= 0 && queue.length > 0
+      ? `${currentQueueIndex + 1}/${queue.length}`
+      : null;
+
+  const focusPlayingSong = () => {
+    if (currentDisplaySong) {
+      songListRef.current?.scrollToSong(currentDisplaySong.id);
+    }
+  };
+
   return (
     <div className="App">
       <EmbeddedPlayerPanel
         currentSong={currentDisplaySong}
+        playbackPositionLabel={playbackPositionLabel}
         onEnded={playNext}
         onNext={playNext}
         onPrevious={playPrevious}
+        onFocusPlayingSong={focusPlayingSong}
         canGoNext={canGoNext}
         canGoPrevious={canGoPrevious}
       />
@@ -130,6 +144,7 @@ function App() {
           onPlayRandom50={startQueue}
         />
         <SongList
+          ref={songListRef}
           songs={songs}
           setSongs={setSongs}
           queuedSongIds={queuedSongIds}

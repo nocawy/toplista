@@ -188,6 +188,7 @@ const SongComponent: React.FC<SongProps> = ({
 
   return (
     <tr
+      id={`song-row-${song.id}`}
       ref={setNodeRef}
       style={style}
       className={rowClassName}
