@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useRanking } from "./contexts/RankingContext";
 import Footer from "./components/Footer";
 import EmbeddedPlayerPanel from "./components/EmbeddedPlayer/EmbeddedPlayerPanel";
+import { useAutoScrollToSong } from "./hooks/useAutoScrollToSong";
 import { useMediaSession } from "./hooks/useMediaSession";
 import { usePlaybackQueue } from "./hooks/usePlaybackQueue";
 
@@ -35,6 +36,7 @@ function App() {
     onNext: playNext,
     onPrevious: playPrevious,
   });
+  useAutoScrollToSong(currentDisplaySong?.id);
 
   const focusPlayingSong = () => {
     if (currentDisplaySong) {
