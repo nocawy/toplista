@@ -41,3 +41,8 @@
   box-sizing: border-box;
   width: 100%;
 }
+
+.autofill-status {
+  color: #4caf50;
+  font-size: 0.8em;
+}

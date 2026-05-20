@@ -3,6 +3,18 @@ import apiClient from "./apiClient";
 import { Song } from "../components/Song";
 import { getCurrentRankingSlug } from "./utilRanking";
 
+export interface YouTubeSongSuggestion {
+  s_yt_id: string;
+  s_artist: string;
+  s_title: string;
+  s_album: string | null;
+  s_released: number | null;
+  s_discovered: string;
+  source_title: string;
+  source_channel: string;
+  thumbnail_url: string;
+}
+
 export const fetchSongs = async (slugParam?: string): Promise<Song[]> => {
   try {
     const slug = slugParam ?? getCurrentRankingSlug();
@@ -16,6 +28,30 @@ export const fetchSongs = async (slugParam?: string): Promise<Song[]> => {
     console.error("Error getting songs:", error);
     throw error;
   }
+};
+
+export const lookupSongByYtId = async (ytId: string): Promise<Song | null> => {
+  const response = await fetch(`${process.env.REACT_APP_API_URL}songs/lookup/?yt_id=${encodeURIComponent(ytId)}`);
+
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error("Song lookup failed");
+  }
+
+  return response.json();
+};
+
+export const fetchYouTubeSongSuggestions = async (ytId: string): Promise<YouTubeSongSuggestion | null> => {
+  const response = await fetch(
+    `${process.env.REACT_APP_API_URL}songs/youtube-metadata/?yt_id=${encodeURIComponent(ytId)}`
+  );
+
+  if (response.status === 404 || response.status === 502) return null;
+  if (!response.ok) {
+    throw new Error("YouTube metadata lookup failed");
+  }
+
+  return response.json();
 };
 
 interface SongUpdate {

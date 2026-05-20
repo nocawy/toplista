@@ -16,6 +16,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Song, Ranking, RankingEntry
 from .serializers import LoginSerializer, SongSerializer, RankingSerializer
+from .youtube_metadata import YouTubeMetadataError, get_youtube_song_suggestion, is_valid_youtube_id
 
 
 def _get_selected_ranking(request) -> Ranking:
@@ -48,6 +49,19 @@ def song_lookup(request):
     if not song:
         return JsonResponse({"detail": "not found"}, status=404)
     return JsonResponse(SongSerializer(song).data, safe=False)
+
+
+@api_view(["GET"])
+def youtube_metadata_lookup(request):
+    """Fetch public YouTube metadata and return editable song suggestions."""
+    yt_id = request.GET.get("yt_id", "")
+    if not is_valid_youtube_id(yt_id):
+        return Response({"detail": "yt_id must be an 11-character YouTube ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        return Response(get_youtube_song_suggestion(yt_id))
+    except YouTubeMetadataError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 class RankingList(generics.ListCreateAPIView):

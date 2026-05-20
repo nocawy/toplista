@@ -1,11 +1,34 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { isAxiosError } from "axios";
 import { Song } from "./Song";
 import "./AddSongForm.css";
-import { fetchSongs } from "../api/songService";
+import {
+  fetchSongs,
+  fetchYouTubeSongSuggestions,
+  lookupSongByYtId,
+  YouTubeSongSuggestion,
+} from "../api/songService";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { parseSongFieldInput } from "../utils/parsers";
+
+type AutofillStatus = "" | "looking-up" | "filled-db" | "filled-youtube" | "not-found" | "error";
+type AutofillField = "s_artist" | "s_title" | "s_album" | "s_released" | "s_discovered" | "s_comment";
+
+const YOUTUBE_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+const AUTOFILL_FIELDS: AutofillField[] = [
+  "s_artist",
+  "s_title",
+  "s_album",
+  "s_released",
+  "s_discovered",
+  "s_comment",
+];
+
+const isEmptyAutofillValue = (value: Song[AutofillField] | undefined): boolean => {
+  if (value === null || value === undefined) return true;
+  return typeof value === "string" && value.trim() === "";
+};
 
 interface AddSongFormProps {
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
@@ -33,16 +56,89 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string[] }>({});
+  const [autofillStatus, setAutofillStatus] = useState<AutofillStatus>("");
+  const touchedFields = useRef<Set<string>>(new Set());
+  const lookupSequence = useRef<number>(0);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     const parsedValue = parseSongFieldInput(name, value);
+
+    if (AUTOFILL_FIELDS.includes(name as AutofillField) && isEmptyAutofillValue(parsedValue as Song[AutofillField])) {
+      touchedFields.current.delete(name);
+    } else {
+      touchedFields.current.add(name);
+    }
+
     setNewSong((prev) => ({
       ...prev,
       [name]: parsedValue,
     }));
+  };
+
+  const mergeAutofillFields = (fields: Partial<Song>) => {
+    setNewSong((prev) => {
+      const next = { ...prev };
+
+      AUTOFILL_FIELDS.forEach((field) => {
+        if (fields[field] === undefined) return;
+        const hasManualValue = touchedFields.current.has(field) && !isEmptyAutofillValue(prev[field]);
+        if (hasManualValue) return;
+        next[field] = fields[field] as never;
+      });
+
+      return next;
+    });
+  };
+
+  const mergeSuggestionFields = (suggestion: YouTubeSongSuggestion) => {
+    mergeAutofillFields({
+      s_artist: suggestion.s_artist,
+      s_title: suggestion.s_title,
+      s_album: suggestion.s_album,
+      s_released: suggestion.s_released,
+      s_discovered: suggestion.s_discovered,
+    });
+  };
+
+  const handleYouTubeIdBlur = async () => {
+    const ytId = newSong.s_yt_id;
+    if (!YOUTUBE_ID_RE.test(ytId)) {
+      setAutofillStatus("");
+      return;
+    }
+
+    const sequence = lookupSequence.current + 1;
+    lookupSequence.current = sequence;
+    setAutofillStatus("looking-up");
+
+    try {
+      const existingSong = await lookupSongByYtId(ytId);
+      if (lookupSequence.current !== sequence) return;
+
+      if (existingSong) {
+        mergeAutofillFields(existingSong);
+        setAutofillStatus("filled-db");
+        return;
+      }
+
+      const suggestion = await fetchYouTubeSongSuggestions(ytId);
+      if (lookupSequence.current !== sequence) return;
+
+      if (suggestion) {
+        mergeSuggestionFields(suggestion);
+        setAutofillStatus("filled-youtube");
+        return;
+      }
+
+      setAutofillStatus("not-found");
+    } catch (error) {
+      if (lookupSequence.current !== sequence) return;
+      console.error("Autofill lookup error:", error);
+      setAutofillStatus("error");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,6 +170,8 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
         // Assuming r_rank is sequential and there are no gaps
         r_rank: updatedSongsList.length + 1,
       }));
+      touchedFields.current.clear();
+      setAutofillStatus("");
     } catch (error) {
       // console.error("Error handleSubmit new song:", error);
       if (isAxiosError(error) && error.response) {
@@ -92,9 +190,15 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
           name="s_yt_id"
           value={newSong.s_yt_id}
           onChange={handleChange}
+          onBlur={handleYouTubeIdBlur}
           placeholder="YouTube ID"
         />
         {errors.s_yt_id && <div className="error">{errors.s_yt_id}</div>}
+        {autofillStatus === "looking-up" && <div className="autofill-status">looking up...</div>}
+        {autofillStatus === "filled-db" && <div className="autofill-status">filled from database</div>}
+        {autofillStatus === "filled-youtube" && <div className="autofill-status">suggested from YouTube title</div>}
+        {autofillStatus === "not-found" && <div className="autofill-status">no metadata found</div>}
+        {autofillStatus === "error" && <div className="autofill-status error">metadata lookup failed</div>}
       </div>
       <div className="form-field">
         <input

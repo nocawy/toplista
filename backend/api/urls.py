@@ -7,12 +7,13 @@ from .views import AddSong
 from .views import update_song
 from .views import delete_song
 from .views import LoginAPIView
-from .views import song_lookup, RankingList, RankingDetail
+from .views import song_lookup, youtube_metadata_lookup, RankingList, RankingDetail
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path("songs/", SongList.as_view()),  # accepts ?list=<slug>
     path("songs/lookup/", song_lookup),
+    path("songs/youtube-metadata/", youtube_metadata_lookup),
     path("update/rank/", update_rank),  # accepts ?list=<slug>
     path("upload-csv/", UploadCSV.as_view()),
     path("songs/add/", AddSong.as_view()),
