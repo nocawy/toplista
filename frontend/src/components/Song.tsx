@@ -233,25 +233,24 @@ const SongComponent: React.FC<SongProps> = ({
             )}
           </td>
           <td>
-            <button
-              type="button"
-              className={`play-link ${isUnavailable ? "unavailable" : ""}`}
-              onClick={() => onPlaySong(song)}
-            >
+            <button type="button" className="play-link" onClick={() => onPlaySong(song)}>
               &#x23F5;{/* ⏵ */}
-              {isUnavailable && "x"}
             </button>
           </td>
           <td className="youtube-link-column">
             <a
-              className="youtube-link"
+              className={`youtube-link${isUnavailable ? " unavailable" : ""}`}
               href={`https://www.youtube.com/watch?v=${song.s_yt_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              title="Open on YouTube"
-              aria-label={`Open ${song.s_title} on YouTube`}
+              title={isUnavailable ? "Video may be unavailable — open on YouTube to verify" : "Open on YouTube"}
+              aria-label={
+                isUnavailable
+                  ? `Video may be unavailable: ${song.s_title}`
+                  : `Open ${song.s_title} on YouTube`
+              }
             >
-              YT
+              {isUnavailable ? "-x-" : "YT"}
             </a>
           </td>
           <td>{song.s_artist || "-"}</td>

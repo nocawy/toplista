@@ -11,11 +11,6 @@
   -moz-appearance: textfield;
 }
 
-.play-link.unavailable {
-  color: crimson;
-  text-decoration: line-through;
-  opacity: 0.7;
-}
 
 /* Highlight rows queued by PlayTop50 or PlayRandom50 */
 tr.random-selected {
