@@ -14,7 +14,7 @@
 }
 
 .form-field.yt_id {
-  flex: 0 0 6em;
+  flex: 0 0 calc(6em + 30px);
 }
 
 .form-field.years {

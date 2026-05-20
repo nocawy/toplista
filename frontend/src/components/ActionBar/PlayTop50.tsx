@@ -1,18 +1,17 @@
 interface PlayTop50Props {
-  link: string;
+  onPlay: () => void;
 }
 
-const PlayTop50: React.FC<PlayTop50Props> = ({ link }) => {
+const PlayTop50: React.FC<PlayTop50Props> = ({ onPlay }) => {
   return (
     <div className="nav-item">
-      <a
+      <button
+        type="button"
         className="nav-link"
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
+        onClick={onPlay}
       >
         play <br /> top 50
-      </a>
+      </button>
     </div>
   );
 };

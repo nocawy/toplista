@@ -26,10 +26,12 @@ import { useRanking } from "../contexts/RankingContext";
 interface SongListProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  selectedRandomIds?: number[];
+  queuedSongIds?: number[];
+  currentSongId?: number | null;
+  onPlaySong: (song: Song) => void;
 }
 
-const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds }) => {
+const SongList: React.FC<SongListProps> = ({ songs, setSongs, queuedSongIds, currentSongId, onPlaySong }) => {
   const { isLoggedIn } = useAuth();
   const { currentSlug } = useRanking();
 
@@ -79,7 +81,8 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds 
           <tr>
             <th></th>
             <th>#</th>
-            <th>Link</th>
+            <th>Play</th>
+            <th className="youtube-link-column">YT</th>
             <th>Artysta</th>
             <th>Tytuł</th>
             <th>Album</th>
@@ -114,7 +117,9 @@ const SongList: React.FC<SongListProps> = ({ songs, setSongs, selectedRandomIds 
                   index={index + 1} // pass index+1 so that numbering starts with 1
                   songsCount={songs.length}
                   setSongs={setSongs}
-                  isRandomSelected={selectedRandomIds?.includes(song.id) ?? false}
+                  isQueued={queuedSongIds?.includes(song.id) ?? false}
+                  isCurrentlyPlaying={currentSongId === song.id}
+                  onPlaySong={onPlaySong}
                 />
               ))}
             </SortableContext>

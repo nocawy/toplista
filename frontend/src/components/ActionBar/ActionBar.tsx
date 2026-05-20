@@ -2,7 +2,6 @@
 import "./ActionBar.css";
 import { Song } from "../Song";
 import PlayTop50 from "./PlayTop50";
-import useTop50Link from "../../hooks/useTop50Link";
 import PlayRandom50 from "./PlayRandom50";
 import ImportComponent from "./Import";
 import ExportComponent from "./Export";
@@ -13,11 +12,11 @@ import RankingSwitcher from "./RankingSwitcher";
 interface ActionBarProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  onRandomSelected?: (selectedSongIds: number[]) => void;
+  onPlayTop50: () => void;
+  onPlayRandom50: (selectedSongs: Song[]) => void;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected }) => {
-  const top50Link = useTop50Link(songs);
+const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onPlayTop50, onPlayRandom50 }) => {
   const { isLoggedIn } = useAuth();
 
   return (
@@ -27,10 +26,10 @@ const ActionBar: React.FC<ActionBarProps> = ({ songs, setSongs, onRandomSelected
       </div>
       <div className="actionbar-center">
         <div className="nav-item">
-          <PlayTop50 link={top50Link} />
+          <PlayTop50 onPlay={onPlayTop50} />
         </div>
         <div className="nav-item">
-          <PlayRandom50 songs={songs} onRandomSelected={onRandomSelected} />
+          <PlayRandom50 songs={songs} onPlayRandom={onPlayRandom50} />
         </div>
       </div>
       <div className="actionbar-right">

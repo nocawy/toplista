@@ -1,0 +1,103 @@
+.player-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-sizing: border-box;
+  min-height: 212px;
+  padding: 6px 16px;
+}
+
+.player-header-idle {
+  justify-content: center;
+}
+
+.player-header-active {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(520px, 560px);
+  gap: 16px;
+  align-items: center;
+}
+
+.player-title {
+  min-width: 0;
+}
+
+.player-lyrics-placeholder {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 132px;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.player-current-song {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.player-lyrics-note {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.85rem;
+}
+
+.player-frame-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.player-queue-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.player-queue-controls button {
+  border: 1px solid #626977;
+  border-radius: 4px;
+  background-color: #474c57;
+  color: white;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.player-queue-controls button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.embedded-youtube-frame {
+  width: 440px;
+  min-width: 440px;
+  height: 200px;
+}
+
+@media (max-width: 900px) {
+  .player-header-active {
+    grid-template-columns: minmax(180px, 1fr) minmax(520px, 560px);
+  }
+
+  .player-title {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .player-header {
+    min-height: 360px;
+  }
+
+  .player-header-active {
+    grid-template-columns: 1fr;
+  }
+
+  .player-frame-panel {
+    justify-content: center;
+  }
+}

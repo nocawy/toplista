@@ -41,7 +41,9 @@ interface SongProps {
   index: number; // row number
   songsCount: number;
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  isRandomSelected?: boolean;
+  isQueued?: boolean;
+  isCurrentlyPlaying?: boolean;
+  onPlaySong: (song: Song) => void;
 }
 
 const SongComponent: React.FC<SongProps> = ({
@@ -49,7 +51,9 @@ const SongComponent: React.FC<SongProps> = ({
   index,
   songsCount,
   setSongs,
-  isRandomSelected = false,
+  isQueued = false,
+  isCurrentlyPlaying = false,
+  onPlaySong,
 }) => {
   const { isLoggedIn } = useAuth();
 
@@ -175,11 +179,18 @@ const SongComponent: React.FC<SongProps> = ({
     }
   };
 
+  const rowClassName = [
+    isQueued ? "random-selected" : "",
+    isCurrentlyPlaying ? "currently-playing" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <tr
       ref={setNodeRef}
       style={style}
-      className={isRandomSelected ? "random-selected" : ""}
+      className={rowClassName}
     >
       {!isEditing || !isLoggedIn ? (
         <>
@@ -222,14 +233,25 @@ const SongComponent: React.FC<SongProps> = ({
             )}
           </td>
           <td>
-            <a
+            <button
+              type="button"
               className={`play-link ${isUnavailable ? "unavailable" : ""}`}
-              href={`https://www.youtube.com/watch?v=${song.s_yt_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => onPlaySong(song)}
             >
               &#x23F5;{/* ⏵ */}
               {isUnavailable && "x"}
+            </button>
+          </td>
+          <td className="youtube-link-column">
+            <a
+              className="youtube-link"
+              href={`https://www.youtube.com/watch?v=${song.s_yt_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open on YouTube"
+              aria-label={`Open ${song.s_title} on YouTube`}
+            >
+              YT
             </a>
           </td>
           <td>{song.s_artist || "-"}</td>
@@ -252,7 +274,7 @@ const SongComponent: React.FC<SongProps> = ({
         </>
       ) : (
         // Song edit form
-        <td colSpan={10} className="song-edit-cell">
+        <td colSpan={11} className="song-edit-cell">
           <form className="form-row song-edit-row" autoComplete="off">
             <div className="form-field yt_id">
               <input
