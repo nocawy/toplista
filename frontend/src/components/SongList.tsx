@@ -23,10 +23,12 @@ import AddSongForm from "./AddSongForm";
 import { updateSongRank, addNewSong, fetchSongs } from "../api/songService";
 import { useAuth } from "../contexts/AuthContext";
 import { useRanking } from "../contexts/RankingContext";
+import type { QueueMode } from "../hooks/usePlaybackQueue";
 
 interface SongListProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  queueMode: QueueMode;
   queuedSongIds?: number[];
   currentSongId?: number | null;
   onPlaySong: (song: Song) => void;
@@ -37,7 +39,7 @@ export interface SongListHandle {
 }
 
 const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
-  { songs, setSongs, queuedSongIds, currentSongId, onPlaySong },
+  { songs, setSongs, queueMode, queuedSongIds, currentSongId, onPlaySong },
   ref
 ) {
   const { isLoggedIn } = useAuth();
@@ -134,7 +136,7 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
                   index={index + 1} // pass index+1 so that numbering starts with 1
                   songsCount={songs.length}
                   setSongs={setSongs}
-                  isQueued={queuedSongIds?.includes(song.id) ?? false}
+                  isQueued={queueMode === "random" && (queuedSongIds?.includes(song.id) ?? false)}
                   isCurrentlyPlaying={currentSongId === song.id}
                   onPlaySong={onPlaySong}
                 />

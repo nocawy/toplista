@@ -1,0 +1,163 @@
+import { useEffect, useMemo, useState } from "react";
+import type { Song } from "../components/Song";
+
+export type QueueMode = "ranking" | "random";
+
+type QueueDirection = "next" | "previous";
+
+export function usePlaybackQueue(songs: Song[], resetKey: string) {
+  const [queueMode, setQueueMode] = useState<QueueMode>("ranking");
+  const [queuedSongIds, setQueuedSongIds] = useState<number[]>([]);
+  const [currentSongId, setCurrentSongId] = useState<number | null>(null);
+
+  const queuedSongIdSet = useMemo(() => new Set(queuedSongIds), [queuedSongIds]);
+
+  const songIndexById = useMemo(() => {
+    const indexById = new Map<number, number>();
+    songs.forEach((song, index) => {
+      indexById.set(song.id, index);
+    });
+    return indexById;
+  }, [songs]);
+
+  const randomQueue = useMemo(
+    () => songs.filter((song) => queuedSongIdSet.has(song.id)),
+    [songs, queuedSongIdSet]
+  );
+
+  const effectiveQueue = queueMode === "ranking" ? songs : randomQueue;
+
+  const currentDisplaySong = useMemo(
+    () => songs.find((song) => song.id === currentSongId) ?? null,
+    [currentSongId, songs]
+  );
+
+  const currentQueueIndex = currentDisplaySong
+    ? effectiveQueue.findIndex((song) => song.id === currentDisplaySong.id)
+    : -1;
+  const isOnEffectiveQueue = currentQueueIndex >= 0;
+
+  useEffect(() => {
+    setQueueMode("ranking");
+    setQueuedSongIds([]);
+    setCurrentSongId(null);
+  }, [resetKey]);
+
+  const stopPlayback = () => {
+    setCurrentSongId(null);
+  };
+
+  const startRandomQueue = (subset: Song[]) => {
+    const subsetIds = subset.map((song) => song.id);
+    setQueueMode("random");
+    setQueuedSongIds(subsetIds);
+    setCurrentSongId(subsetIds[0] ?? null);
+  };
+
+  const clearQueue = () => {
+    setQueueMode("ranking");
+    setQueuedSongIds([]);
+  };
+
+  const findRandomQueueNeighborIndex = (song: Song | null, direction: QueueDirection) => {
+    if (!song) return -1;
+
+    const songIndex = songIndexById.get(song.id);
+    if (songIndex === undefined) return -1;
+
+    if (direction === "next") {
+      return randomQueue.findIndex((queuedSong) => {
+        const queuedSongIndex = songIndexById.get(queuedSong.id);
+        return queuedSongIndex !== undefined && queuedSongIndex > songIndex;
+      });
+    }
+
+    for (let index = randomQueue.length - 1; index >= 0; index--) {
+      const queuedSongIndex = songIndexById.get(randomQueue[index].id);
+      if (queuedSongIndex !== undefined && queuedSongIndex < songIndex) {
+        return index;
+      }
+    }
+
+    return -1;
+  };
+
+  const playSong = (song: Song) => {
+    setCurrentSongId(song.id);
+  };
+
+  const playNext = () => {
+    if (!currentDisplaySong) return;
+
+    if (isOnEffectiveQueue) {
+      const nextQueueIndex = currentQueueIndex + 1;
+      if (nextQueueIndex < effectiveQueue.length) {
+        setCurrentSongId(effectiveQueue[nextQueueIndex].id);
+        return;
+      }
+
+      stopPlayback();
+      return;
+    }
+
+    if (queueMode === "random") {
+      const nextRandomQueueIndex = findRandomQueueNeighborIndex(currentDisplaySong, "next");
+      if (nextRandomQueueIndex >= 0) {
+        setCurrentSongId(randomQueue[nextRandomQueueIndex].id);
+        return;
+      }
+    }
+
+    stopPlayback();
+  };
+
+  const playPrevious = () => {
+    if (!currentDisplaySong) return;
+
+    if (isOnEffectiveQueue) {
+      const previousQueueIndex = currentQueueIndex - 1;
+      if (previousQueueIndex >= 0) {
+        setCurrentSongId(effectiveQueue[previousQueueIndex].id);
+      }
+      return;
+    }
+
+    if (queueMode === "random") {
+      const previousRandomQueueIndex = findRandomQueueNeighborIndex(currentDisplaySong, "previous");
+      if (previousRandomQueueIndex >= 0) {
+        setCurrentSongId(randomQueue[previousRandomQueueIndex].id);
+      }
+    }
+  };
+
+  const canGoNext =
+    currentDisplaySong !== null &&
+    (isOnEffectiveQueue
+      ? currentQueueIndex < effectiveQueue.length - 1
+      : queueMode === "random" && findRandomQueueNeighborIndex(currentDisplaySong, "next") >= 0);
+
+  const canGoPrevious =
+    currentDisplaySong !== null &&
+    (isOnEffectiveQueue
+      ? currentQueueIndex > 0
+      : queueMode === "random" && findRandomQueueNeighborIndex(currentDisplaySong, "previous") >= 0);
+
+  const playbackPositionLabel =
+    queueMode === "random" && isOnEffectiveQueue && effectiveQueue.length > 0
+      ? `${currentQueueIndex + 1}/${effectiveQueue.length}`
+      : null;
+
+  return {
+    queueMode,
+    queuedSongIds,
+    currentDisplaySong,
+    playbackPositionLabel,
+    startRandomQueue,
+    clearQueue,
+    playSong,
+    playNext,
+    playPrevious,
+    canGoNext,
+    canGoPrevious,
+  };
+}

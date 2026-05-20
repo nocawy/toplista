@@ -12,7 +12,7 @@
 }
 
 
-/* Highlight rows queued by PlayTop50 or PlayRandom50 */
+/* Highlight rows queued by play all or play random */
 tr.random-selected {
   background-color: rgba(255, 215, 0, 0.25); /* light gold */
 }

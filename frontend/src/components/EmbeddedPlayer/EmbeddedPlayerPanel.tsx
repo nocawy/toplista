@@ -7,6 +7,7 @@ import "./EmbeddedPlayerPanel.css";
 
 interface EmbeddedPlayerPanelProps {
   currentSong: Song | null;
+  showQueueCounter: boolean;
   playbackPositionLabel: string | null;
   onEnded: () => void;
   onNext: () => void;
@@ -18,6 +19,7 @@ interface EmbeddedPlayerPanelProps {
 
 const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
   currentSong,
+  showQueueCounter,
   playbackPositionLabel,
   onEnded,
   onNext,
@@ -48,12 +50,14 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
       </div>
       <div className="player-frame-panel">
         <div className="player-queue-controls" aria-label="Playback queue controls">
-          <div
-            className={`player-queue-position${playbackPositionLabel ? "" : " player-queue-position-placeholder"}`}
-            aria-live="polite"
-          >
-            {playbackPositionLabel ?? "-"}
-          </div>
+          {showQueueCounter && (
+            <div
+              className={`player-queue-position${playbackPositionLabel ? "" : " player-queue-position-placeholder"}`}
+              aria-live="polite"
+            >
+              {playbackPositionLabel ?? "-"}
+            </div>
+          )}
           <button type="button" onClick={onPrevious} disabled={!canGoPrevious}>
             previous
           </button>

@@ -1,0 +1,21 @@
+const STORAGE_PREFIX = "randomPlayCount:";
+export const DEFAULT_RANDOM_PLAY_COUNT = 50;
+export const RANDOM_PLAY_PRESETS = [10, 50, 100] as const;
+
+export function getRandomPlayCount(slug: string): number {
+  const stored = localStorage.getItem(`${STORAGE_PREFIX}${slug}`);
+  if (!stored) return DEFAULT_RANDOM_PLAY_COUNT;
+
+  const parsed = parseInt(stored, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_RANDOM_PLAY_COUNT;
+  return parsed;
+}
+
+export function setRandomPlayCount(slug: string, count: number): void {
+  localStorage.setItem(`${STORAGE_PREFIX}${slug}`, String(count));
+}
+
+export function clampRandomPlayCount(count: number, songCount: number): number {
+  if (songCount <= 0) return 1;
+  return Math.min(Math.max(1, count), songCount);
+}
