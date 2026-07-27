@@ -11,12 +11,13 @@ import { useMediaSession } from "./hooks/useMediaSession";
 import { usePlaybackQueue } from "./hooks/usePlaybackQueue";
 
 function App() {
-  const { songs, setSongs } = useSongs();
+  const { songs, setSongs, songsSlug } = useSongs();
   const { currentSlug } = useRanking();
   const songListRef = useRef<SongListHandle>(null);
   const {
     queueMode,
     queuedSongIds,
+    queueSlug,
     currentDisplaySong,
     playbackPositionLabel,
     startRandomQueue,
@@ -26,7 +27,7 @@ function App() {
     playPrevious,
     canGoNext,
     canGoPrevious,
-  } = usePlaybackQueue(songs, currentSlug);
+  } = usePlaybackQueue(songs, songsSlug);
 
   useMediaSession({
     currentSong: currentDisplaySong,
@@ -42,6 +43,11 @@ function App() {
       songListRef.current?.scrollToSong(currentDisplaySong.id);
     }
   };
+
+  // The playing song can only be focused (and its queue highlighted in the
+  // tabs) in the ranking the queue belongs to.
+  const isQueueRankingVisible = currentSlug === queueSlug;
+  const playingSlug = currentDisplaySong ? queueSlug : null;
 
   return (
     <div className="App">
@@ -60,6 +66,8 @@ function App() {
           onClearQueue={clearQueue}
           canGoNext={canGoNext}
           canGoPrevious={canGoPrevious}
+          canFocusPlayingSong={currentDisplaySong !== null && isQueueRankingVisible}
+          playingSlug={playingSlug}
         />
         <SongList
           ref={songListRef}

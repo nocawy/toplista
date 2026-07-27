@@ -6,7 +6,12 @@ import { useRanking } from "../../contexts/RankingContext";
 import { useAuth } from "../../contexts/AuthContext";
 import CreateRankingDialog from "./CreateRankingDialog";
 
-const RankingSwitcher: React.FC = () => {
+interface RankingSwitcherProps {
+  /** Slug of the ranking the playing queue belongs to, if a song is playing. */
+  playingSlug: string | null;
+}
+
+const RankingSwitcher: React.FC<RankingSwitcherProps> = ({ playingSlug }) => {
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const { currentSlug, setCurrentSlug } = useRanking();
   const { isLoggedIn } = useAuth();
@@ -39,7 +44,9 @@ const RankingSwitcher: React.FC = () => {
             type="button"
             role="tab"
             aria-selected={r.slug === currentSlug}
-            className={`ranking-tab${r.slug === currentSlug ? " ranking-tab-active" : ""}`}
+            className={`ranking-tab${r.slug === currentSlug ? " ranking-tab-active" : ""}${
+              r.slug === playingSlug ? " ranking-tab-playing" : ""
+            }`}
             onClick={() => setCurrentSlug(r.slug)}
           >
             {r.name}

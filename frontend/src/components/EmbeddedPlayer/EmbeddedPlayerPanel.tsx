@@ -27,6 +27,8 @@ interface EmbeddedPlayerPanelProps {
   onClearQueue: () => void;
   canGoNext: boolean;
   canGoPrevious: boolean;
+  canFocusPlayingSong: boolean;
+  playingSlug: string | null;
 }
 
 const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
@@ -43,6 +45,8 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
   onClearQueue,
   canGoNext,
   canGoPrevious,
+  canFocusPlayingSong,
+  playingSlug,
 }) => {
   const { isLoggedIn } = useAuth();
   const showQueueCounter = queueMode === "random";
@@ -56,7 +60,7 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
           {isLoggedIn && <ImportComponent setSongs={setSongs} />}
           <ExportComponent songs={songs} />
         </div>
-        <RankingSwitcher />
+        <RankingSwitcher playingSlug={playingSlug} />
       </div>
       <div className="player-lyrics-placeholder">
         {currentSong && (
@@ -100,7 +104,7 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
           type="button"
           className="player-nav-button player-focus-song"
           onClick={onFocusPlayingSong}
-          disabled={!currentSong}
+          disabled={!canFocusPlayingSong}
           title="Scroll to playing song"
           aria-label="Scroll to playing song in ranking"
         >

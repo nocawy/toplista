@@ -5,26 +5,29 @@ export type QueueMode = "ranking" | "random";
 
 type QueueDirection = "next" | "previous";
 
-export function usePlaybackQueue(songs: Song[], currentSlug: string) {
+export function usePlaybackQueue(songs: Song[], songsSlug: string | null) {
   const [queueMode, setQueueMode] = useState<QueueMode>("ranking");
   const [queuedSongIds, setQueuedSongIds] = useState<number[]>([]);
   const [currentSongId, setCurrentSongId] = useState<number | null>(null);
   // The queue belongs to the ranking it was started in. A snapshot of that
   // ranking's songs keeps playback (and prev/next) working while the user
   // browses other rankings.
-  const [queueSlug, setQueueSlug] = useState<string>(currentSlug);
+  const [queueSlug, setQueueSlug] = useState<string | null>(songsSlug);
   const [queueSongsSnapshot, setQueueSongsSnapshot] = useState<Song[]>([]);
 
-  const isViewingQueueRanking = currentSlug === queueSlug;
-  const queueSongs = isViewingQueueRanking ? songs : queueSongsSnapshot;
+  // Compare against the slug the loaded songs actually belong to, not the
+  // selected tab: while a ranking switch is refetching, `songs` still holds
+  // the previous ranking's list and must not be treated as the queue's.
+  const isQueueRankingLoaded = songsSlug !== null && songsSlug === queueSlug;
+  const queueSongs = isQueueRankingLoaded ? songs : queueSongsSnapshot;
 
-  // While viewing the queue's ranking, live data (reorders, edits) applies;
+  // While the queue's ranking is loaded, live data (reorders, edits) applies;
   // keep the snapshot in sync so it is fresh when the user navigates away.
   useEffect(() => {
-    if (isViewingQueueRanking) {
+    if (isQueueRankingLoaded) {
       setQueueSongsSnapshot(songs);
     }
-  }, [songs, isViewingQueueRanking]);
+  }, [songs, isQueueRankingLoaded]);
 
   const queuedSongIdSet = useMemo(() => new Set(queuedSongIds), [queuedSongIds]);
 
@@ -58,7 +61,7 @@ export function usePlaybackQueue(songs: Song[], currentSlug: string) {
   };
 
   const anchorQueueToCurrentRanking = () => {
-    setQueueSlug(currentSlug);
+    setQueueSlug(songsSlug);
     setQueueSongsSnapshot(songs);
   };
 
@@ -99,7 +102,7 @@ export function usePlaybackQueue(songs: Song[], currentSlug: string) {
   };
 
   const playSong = (song: Song) => {
-    if (!isViewingQueueRanking) {
+    if (!isQueueRankingLoaded) {
       // Starting playback in a different ranking abandons the old queue.
       setQueueMode("ranking");
       setQueuedSongIds([]);
@@ -172,7 +175,8 @@ export function usePlaybackQueue(songs: Song[], currentSlug: string) {
   return {
     queueMode,
     // Queue highlighting only applies in the ranking the queue belongs to.
-    queuedSongIds: isViewingQueueRanking ? queuedSongIds : [],
+    queuedSongIds: isQueueRankingLoaded ? queuedSongIds : [],
+    queueSlug,
     currentDisplaySong,
     playbackPositionLabel,
     startRandomQueue,

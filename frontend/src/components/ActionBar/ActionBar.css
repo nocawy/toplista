@@ -97,6 +97,10 @@
   background-color: white;
   color: #222;
   border-color: white;
+}
+
+/* Green underline marks the ranking the playing queue belongs to. */
+.ranking-tab-playing {
   border-bottom-color: #4caf50;
 }
 
