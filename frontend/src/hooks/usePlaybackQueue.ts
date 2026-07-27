@@ -5,31 +5,47 @@ export type QueueMode = "ranking" | "random";
 
 type QueueDirection = "next" | "previous";
 
-export function usePlaybackQueue(songs: Song[], resetKey: string) {
+export function usePlaybackQueue(songs: Song[], currentSlug: string) {
   const [queueMode, setQueueMode] = useState<QueueMode>("ranking");
   const [queuedSongIds, setQueuedSongIds] = useState<number[]>([]);
   const [currentSongId, setCurrentSongId] = useState<number | null>(null);
+  // The queue belongs to the ranking it was started in. A snapshot of that
+  // ranking's songs keeps playback (and prev/next) working while the user
+  // browses other rankings.
+  const [queueSlug, setQueueSlug] = useState<string>(currentSlug);
+  const [queueSongsSnapshot, setQueueSongsSnapshot] = useState<Song[]>([]);
+
+  const isViewingQueueRanking = currentSlug === queueSlug;
+  const queueSongs = isViewingQueueRanking ? songs : queueSongsSnapshot;
+
+  // While viewing the queue's ranking, live data (reorders, edits) applies;
+  // keep the snapshot in sync so it is fresh when the user navigates away.
+  useEffect(() => {
+    if (isViewingQueueRanking) {
+      setQueueSongsSnapshot(songs);
+    }
+  }, [songs, isViewingQueueRanking]);
 
   const queuedSongIdSet = useMemo(() => new Set(queuedSongIds), [queuedSongIds]);
 
   const songIndexById = useMemo(() => {
     const indexById = new Map<number, number>();
-    songs.forEach((song, index) => {
+    queueSongs.forEach((song, index) => {
       indexById.set(song.id, index);
     });
     return indexById;
-  }, [songs]);
+  }, [queueSongs]);
 
   const randomQueue = useMemo(
-    () => songs.filter((song) => queuedSongIdSet.has(song.id)),
-    [songs, queuedSongIdSet]
+    () => queueSongs.filter((song) => queuedSongIdSet.has(song.id)),
+    [queueSongs, queuedSongIdSet]
   );
 
-  const effectiveQueue = queueMode === "ranking" ? songs : randomQueue;
+  const effectiveQueue = queueMode === "ranking" ? queueSongs : randomQueue;
 
   const currentDisplaySong = useMemo(
-    () => songs.find((song) => song.id === currentSongId) ?? null,
-    [currentSongId, songs]
+    () => queueSongs.find((song) => song.id === currentSongId) ?? null,
+    [currentSongId, queueSongs]
   );
 
   const currentQueueIndex = currentDisplaySong
@@ -37,18 +53,18 @@ export function usePlaybackQueue(songs: Song[], resetKey: string) {
     : -1;
   const isOnEffectiveQueue = currentQueueIndex >= 0;
 
-  useEffect(() => {
-    setQueueMode("ranking");
-    setQueuedSongIds([]);
-    setCurrentSongId(null);
-  }, [resetKey]);
-
   const stopPlayback = () => {
     setCurrentSongId(null);
   };
 
+  const anchorQueueToCurrentRanking = () => {
+    setQueueSlug(currentSlug);
+    setQueueSongsSnapshot(songs);
+  };
+
   const startRandomQueue = (subset: Song[]) => {
     const subsetIds = subset.map((song) => song.id);
+    anchorQueueToCurrentRanking();
     setQueueMode("random");
     setQueuedSongIds(subsetIds);
     setCurrentSongId(subsetIds[0] ?? null);
@@ -83,6 +99,12 @@ export function usePlaybackQueue(songs: Song[], resetKey: string) {
   };
 
   const playSong = (song: Song) => {
+    if (!isViewingQueueRanking) {
+      // Starting playback in a different ranking abandons the old queue.
+      setQueueMode("ranking");
+      setQueuedSongIds([]);
+      anchorQueueToCurrentRanking();
+    }
     setCurrentSongId(song.id);
   };
 
@@ -149,7 +171,8 @@ export function usePlaybackQueue(songs: Song[], resetKey: string) {
 
   return {
     queueMode,
-    queuedSongIds,
+    // Queue highlighting only applies in the ranking the queue belongs to.
+    queuedSongIds: isViewingQueueRanking ? queuedSongIds : [],
     currentDisplaySong,
     playbackPositionLabel,
     startRandomQueue,
