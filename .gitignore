@@ -163,3 +163,4 @@ cython_debug/
 .backup
 scripts/deploy.config.ps1
 .deploy/
+backend/secret_key.txt

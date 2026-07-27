@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -21,7 +22,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-cm3r=2mqdk9_59zzr-t2wr4-1zu03g-l9q8lsgcx^ngur+@c@8'
+# Resolution order:
+# 1. DJANGO_SECRET_KEY environment variable
+# 2. secret_key.txt next to manage.py (create a distinct one per deployed
+#    app, so JWTs issued by one app are not valid on the other)
+# 3. insecure fallback for local development only
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    _secret_key_file = BASE_DIR / 'secret_key.txt'
+    if _secret_key_file.exists():
+        SECRET_KEY = _secret_key_file.read_text().strip()
+if not SECRET_KEY:
+    SECRET_KEY = 'django-insecure-cm3r=2mqdk9_59zzr-t2wr4-1zu03g-l9q8lsgcx^ngur+@c@8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

@@ -225,6 +225,18 @@ Full release:
 .\scripts\deploy.ps1 -Target all
 ```
 
+## Backend Secret Keys
+
+Each deployed backend app should have its own Django `SECRET_KEY`, stored in `secret_key.txt` next to `manage.py` on the server (or in a `DJANGO_SECRET_KEY` environment variable). Distinct keys ensure JWTs issued by one app are not valid on the other.
+
+Generate one per app, over SSH:
+
+```powershell
+ssh toplista "python3 -c 'import secrets; print(secrets.token_urlsafe(64))' > /path/to/backend/secret_key.txt && chmod 600 /path/to/backend/secret_key.txt"
+```
+
+The deploy script never uploads or overwrites `secret_key.txt` (the backend archive contains only `api`, `toplista`, `manage.py` and `requirements.txt`). Restart the app after creating the file. Changing the key logs everyone out but does not affect the database or user passwords.
+
 ## Notes And Safety
 
 - Keep SSH keys in `C:\Users\<you>\.ssh\`, not in this repo.
