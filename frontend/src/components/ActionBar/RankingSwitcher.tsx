@@ -13,8 +13,12 @@ const RankingSwitcher: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
 
   const loadRankings = async () => {
-    const resp = await apiClient.get<Ranking[]>("rankings/");
-    setRankings(resp.data);
+    try {
+      const resp = await apiClient.get<Ranking[]>("rankings/");
+      setRankings(resp.data);
+    } catch (error) {
+      console.error("Error loading rankings:", error);
+    }
   };
 
   useEffect(() => {

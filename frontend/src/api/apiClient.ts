@@ -51,14 +51,18 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     // Check if the response is 401 (Unauthorized) and not already retried
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true; // Mark request as retried
       try {
         const newAccessToken = await refreshToken(); // Attempt to refresh token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`; // Update the header with the new token
         return apiClient(originalRequest); // Retry the original request with the new token
       } catch (refreshError) {
-        return Promise.reject(refreshError); // If refresh fails, reject the promise
+        // Refresh failed and the user has been logged out (tokens cleared).
+        // A stale token in storage must not break public read endpoints,
+        // so retry once anonymously; protected endpoints will still 401.
+        delete originalRequest.headers.Authorization;
+        return apiClient(originalRequest);
       }
     }
     return Promise.reject(error); // For all other errors, reject the promise
