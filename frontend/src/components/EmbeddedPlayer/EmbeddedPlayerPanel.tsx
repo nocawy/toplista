@@ -1,6 +1,6 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrosshairs } from "@fortawesome/free-solid-svg-icons";
+import { faCrosshairs, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { Song } from "../Song";
 import EmbeddedYouTubePlayer from "./EmbeddedYouTubePlayer";
 import PlayRandom from "../ActionBar/PlayRandom";
@@ -48,11 +48,7 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
   const showQueueCounter = queueMode === "random";
 
   return (
-    <header
-      className={`App-header player-header ${
-        currentSong ? "player-header-active" : "player-header-idle"
-      }`}
-    >
+    <header className="App-header player-header">
       <div className="player-side">
         <h1>Osobisty Top Wszech Czasów</h1>
         <div className="player-side-utils">
@@ -62,15 +58,15 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
         </div>
         <RankingSwitcher />
       </div>
-      {currentSong && (
-        <div className="player-lyrics-placeholder">
+      <div className="player-lyrics-placeholder">
+        {currentSong && (
           <div className="player-current-song">
             {currentSong.s_artist && `${currentSong.s_artist} - `}
             {currentSong.s_title}
           </div>
-          <div className="player-lyrics-note">lyrics area</div>
-        </div>
-      )}
+        )}
+        <div className="player-lyrics-note">lyrics area</div>
+      </div>
       <div className="player-queue-controls" aria-label="Playback controls">
         <div
           className={`player-queue-position${
@@ -117,11 +113,15 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
           onClearQueue={onClearQueue}
         />
       </div>
-      {currentSong && (
-        <div className="player-video">
+      <div className="player-video">
+        {currentSong ? (
           <EmbeddedYouTubePlayer videoId={currentSong.s_yt_id} onEnded={onEnded} />
-        </div>
-      )}
+        ) : (
+          <div className="player-video-placeholder" aria-hidden="true">
+            <FontAwesomeIcon icon={faPlay} />
+          </div>
+        )}
+      </div>
     </header>
   );
 };
