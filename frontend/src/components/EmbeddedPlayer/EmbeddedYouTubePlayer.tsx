@@ -80,13 +80,20 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({ videoId, 
 
   useEffect(() => {
     let isMounted = true;
+    const container = containerRef.current;
+
+    // The YT API replaces the target element with an iframe. Hand it a
+    // detached child element instead of the React-rendered div, otherwise
+    // React crashes on unmount trying to remove a node that no longer exists.
+    const playerElement = document.createElement("div");
+    container?.appendChild(playerElement);
 
     youtubeApiReady().then(() => {
-      if (!isMounted || !containerRef.current) return;
+      if (!isMounted || !playerElement.isConnected) return;
       const youtubeWindow = window as YouTubeWindow;
       if (!youtubeWindow.YT?.Player) return;
 
-      playerRef.current = new youtubeWindow.YT.Player(containerRef.current, {
+      playerRef.current = new youtubeWindow.YT.Player(playerElement, {
         videoId: videoIdRef.current,
         playerVars: {
           autoplay: 1,
@@ -112,6 +119,7 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({ videoId, 
       isMounted = false;
       playerRef.current?.destroy();
       playerRef.current = null;
+      container?.replaceChildren();
     };
   }, []);
 
