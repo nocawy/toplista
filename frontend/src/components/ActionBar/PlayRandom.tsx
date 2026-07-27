@@ -4,7 +4,6 @@ import { useRanking } from "../../contexts/RankingContext";
 import {
   clampRandomPlayCount,
   getRandomPlayCount,
-  RANDOM_PLAY_PRESETS,
   setRandomPlayCount,
 } from "../../utils/randomPlayCount";
 import type { QueueMode } from "../../hooks/usePlaybackQueue";
@@ -42,15 +41,6 @@ const PlayRandom: React.FC<PlayRandomProps> = ({ songs, queueMode, onPlayRandom,
     return clamped;
   };
 
-  const applyPreset = (preset: number) => {
-    persistCount(preset);
-  };
-
-  const applyAllPreset = () => {
-    if (songs.length === 0) return;
-    persistCount(songs.length);
-  };
-
   const handleInputBlur = () => {
     const parsed = parseInt(countInput, 10);
     if (!Number.isFinite(parsed)) {
@@ -76,28 +66,7 @@ const PlayRandom: React.FC<PlayRandomProps> = ({ songs, queueMode, onPlayRandom,
   const canClearQueue = queueMode === "random";
 
   return (
-    <div className="nav-item play-random-controls">
-      <div className="play-random-presets" aria-label="Random playlist size presets">
-        {RANDOM_PLAY_PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            className="play-random-preset"
-            onClick={() => applyPreset(preset)}
-            disabled={isDisabled}
-          >
-            {preset}
-          </button>
-        ))}
-        <button
-          type="button"
-          className="play-random-preset"
-          onClick={applyAllPreset}
-          disabled={isDisabled}
-        >
-          all
-        </button>
-      </div>
+    <div className="play-random-controls">
       <div className="play-random-main">
         <input
           type="number"

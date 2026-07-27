@@ -1,6 +1,5 @@
 const STORAGE_PREFIX = "randomPlayCount:";
 export const DEFAULT_RANDOM_PLAY_COUNT = 50;
-export const RANDOM_PLAY_PRESETS = [10, 50, 100] as const;
 
 export function getRandomPlayCount(slug: string): number {
   const stored = localStorage.getItem(`${STORAGE_PREFIX}${slug}`);

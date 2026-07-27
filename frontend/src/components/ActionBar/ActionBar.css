@@ -1,61 +1,12 @@
-.ActionBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  background-color: #474c57;
-  color: white;
-}
-
-.nav-item {
-  text-align: center;
-}
-
-.actionbar-left {
-  min-width: 0;
-  max-width: 460px;
-}
-
-.actionbar-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-}
+/* Shared styles for the header controls: ranking switcher, play random,
+   csv import/export and login. The bar itself was merged into the sticky
+   player header (EmbeddedPlayerPanel). */
 
 .play-random-controls {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-}
-
-.play-random-presets {
-  display: flex;
-  gap: 4px;
-}
-
-.play-random-preset {
-  border: 1px solid #626977;
-  border-radius: 3px;
-  background-color: #363b45;
-  color: white;
-  padding: 1px 6px;
-  font: inherit;
-  font-size: 0.75em;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.play-random-preset:hover,
-.play-random-preset:focus-visible {
-  color: #4caf50;
-}
-
-.play-random-preset:disabled {
-  cursor: default;
-  opacity: 0.45;
 }
 
 .play-random-main {
@@ -110,22 +61,6 @@
   text-decoration: none;
 }
 
-.actionbar-right {
-  display: flex;
-  align-items: center;
-  justify-self: end;
-  gap: 24px;
-}
-
-.actionbar-login-item {
-  width: 8em;
-}
-
-.actionbar-placeholder {
-  display: block;
-  visibility: hidden;
-}
-
 .ranking-switcher {
   min-width: 0;
 }
@@ -147,6 +82,7 @@
   border-radius: 6px 6px 0 0;
   padding: 6px 10px;
   font: inherit;
+  font-size: 0.95rem;
   line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
@@ -189,7 +125,7 @@
 }
 
 .login-form {
-  width: 100%;
+  width: 7em;
   box-sizing: border-box;
   padding: 2px 4px;
   line-height: 1.1;
@@ -197,8 +133,14 @@
 
 .login-controls,
 .login-status {
-  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   line-height: 1.2;
+}
+
+.login-username {
+  font-weight: 600;
 }
 
 .login-controls .text-button,

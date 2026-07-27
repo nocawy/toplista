@@ -28,8 +28,7 @@ const LoginForm: React.FC = () => {
   if (isLoggedIn) {
     return (
       <div className="login-status">
-        {username}
-        <br />
+        <span className="login-username">{username}</span>
         <button onClick={logout} className="text-button">
           log out
         </button>

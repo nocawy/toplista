@@ -1,6 +1,5 @@
 import "./App.css";
 import React, { useRef } from "react";
-import ActionBar from "./components/ActionBar/ActionBar";
 import SongList, { SongListHandle } from "./components/SongList";
 import useSongs from "./hooks/useSongs";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -46,24 +45,21 @@ function App() {
 
   return (
     <div className="App">
-      <EmbeddedPlayerPanel
-        currentSong={currentDisplaySong}
-        showQueueCounter={queueMode === "random"}
-        playbackPositionLabel={playbackPositionLabel}
-        onEnded={playNext}
-        onNext={playNext}
-        onPrevious={playPrevious}
-        onFocusPlayingSong={focusPlayingSong}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-      />
       <AuthProvider>
-        <ActionBar
+        <EmbeddedPlayerPanel
+          currentSong={currentDisplaySong}
           songs={songs}
           setSongs={setSongs}
           queueMode={queueMode}
+          playbackPositionLabel={playbackPositionLabel}
+          onEnded={playNext}
+          onNext={playNext}
+          onPrevious={playPrevious}
+          onFocusPlayingSong={focusPlayingSong}
           onPlayRandom={startRandomQueue}
           onClearQueue={clearQueue}
+          canGoNext={canGoNext}
+          canGoPrevious={canGoPrevious}
         />
         <SongList
           ref={songListRef}
