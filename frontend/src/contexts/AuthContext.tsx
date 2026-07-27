@@ -6,6 +6,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { getStorageItem, setStorageItem, removeStorageItem } from "../utils/appStorage";
 
 interface AuthContextType {
   username: string;
@@ -31,21 +32,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = (username: string) => {
     setIsLoggedIn(true);
     setUsername(username);
-    localStorage.setItem("username", username);
+    setStorageItem("username", username);
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     setUsername("");
-    localStorage.removeItem("username");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    removeStorageItem("username");
+    removeStorageItem("accessToken");
+    removeStorageItem("refreshToken");
   };
 
   useEffect(() => {
     window.logoutFromApi = logout;
-    const token = localStorage.getItem("accessToken");
-    const username = localStorage.getItem("username");
+    const token = getStorageItem("accessToken");
+    const username = getStorageItem("username");
     if (token && username) {
       setIsLoggedIn(true);
       setUsername(username);

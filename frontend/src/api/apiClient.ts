@@ -1,5 +1,6 @@
 // api/apiClient.ts
 import axios from "axios";
+import { getStorageItem, setStorageItem } from "../utils/appStorage";
 
 // Create an Axios instance with default configuration
 const apiClient = axios.create({
@@ -15,11 +16,11 @@ const refreshToken = async () => {
     const response = await axios.post(
       `${process.env.REACT_APP_API_URL}token/refresh/`,
       {
-        refresh: localStorage.getItem("refreshToken"), // Assuming the refresh token is stored in localStorage
+        refresh: getStorageItem("refreshToken"),
       }
     );
     const { access: newAccessToken } = response.data;
-    localStorage.setItem("accessToken", newAccessToken);
+    setStorageItem("accessToken", newAccessToken);
     return newAccessToken;
   } catch (error) {
     console.error("Error refreshing token:", error);
@@ -34,7 +35,7 @@ const refreshToken = async () => {
 // Request interceptor to include the JWT token in every request
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
+    const token = getStorageItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

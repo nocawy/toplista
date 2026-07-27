@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { getStorageItem, setStorageItem } from "../utils/appStorage";
 
 interface RankingContextValue {
   currentSlug: string;
@@ -9,11 +10,11 @@ const RankingContext = createContext<RankingContextValue | undefined>(undefined)
 
 export const RankingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentSlug, setCurrentSlugState] = useState<string>(() => {
-    return localStorage.getItem("currentRankingSlug") || "main";
+    return getStorageItem("currentRankingSlug") || "main";
   });
 
   useEffect(() => {
-    localStorage.setItem("currentRankingSlug", currentSlug);
+    setStorageItem("currentRankingSlug", currentSlug);
   }, [currentSlug]);
 
   const setCurrentSlug = (slug: string) => setCurrentSlugState(slug);

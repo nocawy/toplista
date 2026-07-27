@@ -1,5 +1,7 @@
+import { getStorageItem } from "../utils/appStorage";
+
 export const getCurrentRankingSlug = (): string => {
-  return localStorage.getItem("currentRankingSlug") || "main";
+  return getStorageItem("currentRankingSlug") || "main";
 };
 
 export interface Ranking {

@@ -1,4 +1,5 @@
 // api/loginApi.ts
+import { setStorageItem } from "../utils/appStorage";
 
 export const handleLogin = async (
   username: string,
@@ -19,9 +20,9 @@ export const handleLogin = async (
   const data = await response.json();
   console.log("Login successful:", data);
 
-  localStorage.setItem("accessToken", data.access);
+  setStorageItem("accessToken", data.access);
   if (data.refresh) {
-    localStorage.setItem("refreshToken", data.refresh);
+    setStorageItem("refreshToken", data.refresh);
   }
 
   return true;

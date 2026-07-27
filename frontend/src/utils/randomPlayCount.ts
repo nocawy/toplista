@@ -1,8 +1,10 @@
+import { getStorageItem, setStorageItem } from "./appStorage";
+
 const STORAGE_PREFIX = "randomPlayCount:";
 export const DEFAULT_RANDOM_PLAY_COUNT = 50;
 
 export function getRandomPlayCount(slug: string): number {
-  const stored = localStorage.getItem(`${STORAGE_PREFIX}${slug}`);
+  const stored = getStorageItem(`${STORAGE_PREFIX}${slug}`);
   if (!stored) return DEFAULT_RANDOM_PLAY_COUNT;
 
   const parsed = parseInt(stored, 10);
@@ -11,7 +13,7 @@ export function getRandomPlayCount(slug: string): number {
 }
 
 export function setRandomPlayCount(slug: string, count: number): void {
-  localStorage.setItem(`${STORAGE_PREFIX}${slug}`, String(count));
+  setStorageItem(`${STORAGE_PREFIX}${slug}`, String(count));
 }
 
 export function clampRandomPlayCount(count: number, songCount: number): number {
