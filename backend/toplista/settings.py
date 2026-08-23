@@ -38,7 +38,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', 'nocawy.pl']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'nocawy.pl']
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -158,3 +158,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1048576  # 1MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1048576  # 1MB
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "toplista-lyrics",
+    }
+}
+
+LYRICS_PROVIDERS = ["lrclib", "simpmusic", "synclrc"]
+LYRICS_USER_AGENT = "Toplista/1.0 (https://github.com/nocawy/toplista)"
+LYRICS_HTTP_TIMEOUT = 8
+LYRICS_MAX_RESPONSE_BYTES = 1024 * 1024
+LYRICS_RATE_LIMIT = "30/min"
+LYRICS_CACHE_TTL = 60 * 60 * 24
+LYRICS_CACHE_MISS_TTL = 60 * 10
