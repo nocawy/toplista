@@ -8,6 +8,14 @@ type YouTubePlayer = {
   loadVideoById: (videoId: string) => void;
   playVideo: () => void;
   destroy: () => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  getPlayerState: () => number;
+};
+
+export type PlaybackProgress = {
+  currentTime: number;
+  duration: number;
 };
 
 type YouTubePlayerConstructor = new (
@@ -62,17 +70,27 @@ const youtubeApiReady = (() => {
 interface EmbeddedYouTubePlayerProps {
   videoId: string;
   onEnded: () => void;
+  onPlaybackProgress?: (progress: PlaybackProgress) => void;
 }
 
-const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({ videoId, onEnded }) => {
+const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({
+  videoId,
+  onEnded,
+  onPlaybackProgress,
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const onEndedRef = useRef(onEnded);
+  const onPlaybackProgressRef = useRef(onPlaybackProgress);
   const videoIdRef = useRef(videoId);
 
   useEffect(() => {
     onEndedRef.current = onEnded;
   }, [onEnded]);
+
+  useEffect(() => {
+    onPlaybackProgressRef.current = onPlaybackProgress;
+  }, [onPlaybackProgress]);
 
   useEffect(() => {
     videoIdRef.current = videoId;
@@ -105,6 +123,11 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({ videoId, 
         events: {
           onReady: (event) => {
             event.target.playVideo();
+            const duration = event.target.getDuration?.() ?? 0;
+            onPlaybackProgressRef.current?.({
+              currentTime: event.target.getCurrentTime?.() ?? 0,
+              duration,
+            });
           },
           onStateChange: (event) => {
             if (event.data === youtubeWindow.YT?.PlayerState.ENDED) {
@@ -115,8 +138,22 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({ videoId, 
       });
     });
 
+    const progressTimer = window.setInterval(() => {
+      const player = playerRef.current;
+      if (!player?.getCurrentTime) return;
+      try {
+        onPlaybackProgressRef.current?.({
+          currentTime: player.getCurrentTime(),
+          duration: player.getDuration?.() ?? 0,
+        });
+      } catch {
+        // Player can throw while a video is still swapping.
+      }
+    }, 250);
+
     return () => {
       isMounted = false;
+      window.clearInterval(progressTimer);
       playerRef.current?.destroy();
       playerRef.current = null;
       container?.replaceChildren();

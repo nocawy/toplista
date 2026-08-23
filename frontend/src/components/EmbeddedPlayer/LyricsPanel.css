@@ -1,0 +1,74 @@
+.player-lyrics {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  align-self: stretch;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.player-current-song {
+  font-size: 0.95rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+.player-lyrics-empty {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+
+.player-lyrics-body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
+}
+
+.player-lyrics-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.player-lyrics-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+}
+
+.player-lyrics-status,
+.player-lyrics-plain {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.player-lyrics-line {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  padding: 2px 0;
+  transition: color 0.15s ease;
+}
+
+.player-lyrics-line.is-active {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .player-lyrics {
+    display: none;
+  }
+}

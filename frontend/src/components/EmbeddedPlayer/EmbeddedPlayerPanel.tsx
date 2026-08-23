@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrosshairs, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { Song } from "../Song";
 import EmbeddedYouTubePlayer from "./EmbeddedYouTubePlayer";
+import LyricsPanel from "./LyricsPanel";
 import PlayRandom from "../ActionBar/PlayRandom";
 import ImportComponent from "../ActionBar/Import";
 import ExportComponent from "../ActionBar/Export";
@@ -31,6 +32,12 @@ interface EmbeddedPlayerPanelProps {
   playingSlug: string | null;
 }
 
+interface PlaybackState {
+  videoId: string | null;
+  currentTime: number;
+  duration: number | null;
+}
+
 const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
   currentSong,
   songs,
@@ -50,6 +57,16 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
 }) => {
   const { isLoggedIn } = useAuth();
   const showQueueCounter = queueMode === "random";
+  const currentVideoId = currentSong?.s_yt_id ?? null;
+  const [playback, setPlayback] = useState<PlaybackState>({
+    videoId: null,
+    currentTime: 0,
+    duration: null,
+  });
+  const currentPlayback =
+    playback.videoId === currentVideoId
+      ? playback
+      : { videoId: currentVideoId, currentTime: 0, duration: null };
 
   return (
     <header className="App-header player-header">
@@ -62,15 +79,11 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
         </div>
         <RankingSwitcher playingSlug={playingSlug} />
       </div>
-      <div className="player-lyrics-placeholder">
-        {currentSong && (
-          <div className="player-current-song">
-            {currentSong.s_artist && `${currentSong.s_artist} - `}
-            {currentSong.s_title}
-          </div>
-        )}
-        <div className="player-lyrics-note">lyrics area</div>
-      </div>
+      <LyricsPanel
+        song={currentSong}
+        currentTimeSeconds={currentPlayback.currentTime}
+        durationSeconds={currentPlayback.duration}
+      />
       <div className="player-queue-controls" aria-label="Playback controls">
         <div
           className={`player-queue-position${
@@ -119,7 +132,18 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
       </div>
       <div className="player-video">
         {currentSong ? (
-          <EmbeddedYouTubePlayer videoId={currentSong.s_yt_id} onEnded={onEnded} />
+          <EmbeddedYouTubePlayer
+            key={currentSong.s_yt_id}
+            videoId={currentSong.s_yt_id}
+            onEnded={onEnded}
+            onPlaybackProgress={({ currentTime: time, duration: videoDuration }) => {
+              setPlayback({
+                videoId: currentSong.s_yt_id,
+                currentTime: time,
+                duration: videoDuration > 0 ? videoDuration : null,
+              });
+            }}
+          />
         ) : (
           <div className="player-video-placeholder" aria-hidden="true">
             <FontAwesomeIcon icon={faPlay} />
