@@ -36,7 +36,7 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
     const lineCenter =
       container.scrollTop + lineRect.top - containerRect.top + lineRect.height / 2;
     const target = lineCenter - container.clientHeight / 2;
-    container.scrollTo({ top: Math.max(0, target), behavior });
+    container.scrollTo?.({ top: Math.max(0, target), behavior });
   }, []);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
   useEffect(() => {
     previousIndexRef.current = -1;
     setFollowPlayback(true);
-    bodyRef.current?.scrollTo({ top: 0 });
+    bodyRef.current?.scrollTo?.({ top: 0 });
   }, [song?.id, song?.s_yt_id]);
 
   return (
