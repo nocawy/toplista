@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getStorageItem, setStorageItem } from "../utils/appStorage";
 
 interface RankingContextValue {
@@ -17,11 +17,11 @@ export const RankingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setStorageItem("currentRankingSlug", currentSlug);
   }, [currentSlug]);
 
-  const setCurrentSlug = (slug: string) => setCurrentSlugState(slug);
+  const setCurrentSlug = useCallback((slug: string) => setCurrentSlugState(slug), []);
 
   const value = useMemo(
     () => ({ currentSlug, setCurrentSlug }),
-    [currentSlug]
+    [currentSlug, setCurrentSlug]
   );
 
   return <RankingContext.Provider value={value}>{children}</RankingContext.Provider>;

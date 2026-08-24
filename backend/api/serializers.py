@@ -24,7 +24,7 @@ class RankingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ranking
         fields = [field.name for field in Ranking._meta.fields]
-        extra_kwargs = {"slug": {"required": False, "allow_blank": True}}
+        extra_kwargs = {"slug": {"required": False, "allow_blank": False}}
 
     @staticmethod
     def _unique_slug_from_name(name: str) -> str:

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Ranking } from "../../api/utilRanking";
 import apiClient from "../../api/apiClient";
 import "./ActionBar.css";
@@ -17,18 +17,24 @@ const RankingSwitcher: React.FC<RankingSwitcherProps> = ({ playingSlug }) => {
   const { isLoggedIn } = useAuth();
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
 
-  const loadRankings = async () => {
+  const loadRankings = useCallback(async () => {
     try {
       const resp = await apiClient.get<Ranking[]>("rankings/");
       setRankings(resp.data);
     } catch (error) {
       console.error("Error loading rankings:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadRankings();
-  }, []);
+    void loadRankings();
+  }, [loadRankings]);
+
+  useEffect(() => {
+    if (rankings.length > 0 && !rankings.some((ranking) => ranking.slug === currentSlug)) {
+      setCurrentSlug(rankings[0].slug);
+    }
+  }, [currentSlug, rankings, setCurrentSlug]);
 
   const handleCreated = async (ranking: Ranking) => {
     await loadRankings();

@@ -5,6 +5,7 @@ from django.db.models import F, Max
 from django.http import JsonResponse
 import json
 import os
+from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -22,8 +23,7 @@ from .youtube_metadata import YouTubeMetadataError, get_youtube_song_suggestion,
 def _get_selected_ranking(request) -> Ranking:
     """Resolve ranking from query params; default to 'main'."""
     slug = request.GET.get("list") or request.GET.get("ranking") or "main"
-    ranking, _ = Ranking.objects.get_or_create(slug=slug, defaults={"name": slug})
-    return ranking
+    return get_object_or_404(Ranking, slug=slug)
 
 
 class SongList(generics.ListAPIView):
