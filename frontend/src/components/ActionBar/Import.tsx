@@ -1,15 +1,17 @@
 // components/ActionBar/Import.tsx
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import uploadCSV from "../../api/uploadCSV";
 import { Song } from "../Song";
-import { fetchSongs } from "../../api/songService";
+import { useRanking } from "../../contexts/RankingContext";
 
 interface ImportComponentProps {
-  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  refreshSongs: () => Promise<Song[] | null>;
 }
 
-const ImportComponent: React.FC<ImportComponentProps> = ({ setSongs }) => {
+const ImportComponent: React.FC<ImportComponentProps> = ({ refreshSongs }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { currentSlug } = useRanking();
 
   const handleLinkClick = () => {
     fileInputRef.current?.click();
@@ -18,19 +20,28 @@ const ImportComponent: React.FC<ImportComponentProps> = ({ setSongs }) => {
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    if (event.target.files && event.target.files[0]) {
-      await uploadCSV(event.target.files[0]);
-      // Refresh the SongList after upload
-      const updatedSongsList = await fetchSongs();
-      setSongs(updatedSongsList);
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    try {
+      await uploadCSV(file, currentSlug);
+      await refreshSongs();
+    } catch (uploadError) {
+      console.error("There was an error during the file upload:", uploadError);
+      setError("CSV import failed");
+    } finally {
+      input.value = "";
     }
   };
 
   return (
     <div>
-      <a className="nav-link" href="#" onClick={handleLinkClick}>
+      <button type="button" className="nav-link" onClick={handleLinkClick}>
         csv import
-      </a>
+      </button>
+      {error && <div className="error">{error}</div>}
       <input
         type="file"
         accept=".csv"

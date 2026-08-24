@@ -17,7 +17,7 @@ import "./EmbeddedPlayerPanel.css";
 interface EmbeddedPlayerPanelProps {
   currentSong: Song | null;
   songs: Song[];
-  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  refreshSongs: () => Promise<Song[] | null>;
   queueMode: QueueMode;
   playbackPositionLabel: string | null;
   onEnded: () => void;
@@ -41,7 +41,7 @@ interface PlaybackState {
 const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
   currentSong,
   songs,
-  setSongs,
+  refreshSongs,
   queueMode,
   playbackPositionLabel,
   onEnded,
@@ -74,7 +74,7 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
         <h1>Osobisty Top Wszech Czasów</h1>
         <div className="player-side-utils">
           <LoginForm />
-          {isLoggedIn && <ImportComponent setSongs={setSongs} />}
+          {isLoggedIn && <ImportComponent refreshSongs={refreshSongs} />}
           <ExportComponent songs={songs} />
         </div>
         <RankingSwitcher playingSlug={playingSlug} />

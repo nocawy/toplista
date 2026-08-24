@@ -56,8 +56,8 @@ function App() {
       <AuthProvider>
         <EmbeddedPlayerPanel
           currentSong={currentDisplaySong}
-          songs={songs}
-          setSongs={setSongs}
+          songs={visibleSongs}
+          refreshSongs={refreshSongs}
           queueMode={queueMode}
           playbackPositionLabel={playbackPositionLabel}
           onEnded={playNext}
