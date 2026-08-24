@@ -15,6 +15,9 @@ class Command(BaseCommand):
     
         # Create or update the admin user
         user, created = User.objects.get_or_create(username='admin', defaults={'is_staff': True, 'is_superuser': True})
+        user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
         user.set_password(admin_password)
         user.save()
         status = "created" if created else "updated"
