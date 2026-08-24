@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import {
   DndContext,
   closestCenter,
@@ -76,8 +76,18 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
     },
   }));
 
-  const handleDragStart = (event: any) => {
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = "";
+    };
+  }, []);
+
+  const handleDragStart = () => {
     document.body.style.cursor = "grabbing";
+  };
+
+  const handleDragCancel = () => {
+    document.body.style.cursor = "";
   };
 
   const handleDragEnd = async (event: any) => {
@@ -107,38 +117,40 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
   };
 
   return (
-    <div>
+    <div className="song-list-container">
       {isLoading && <div className="song-list-status">Loading ranking…</div>}
       {error && !isLoading && <div className="song-list-status error">{error}</div>}
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>#</th>
-            <th>Play</th>
-            <th className="youtube-link-column">YT</th>
-            <th>Artysta</th>
-            <th>Tytuł</th>
-            <th>Album</th>
-            <th>Rok wydania</th>
-            <th>Rok odkrycia</th>
-            <th>Komentarz</th>
-            <th className="song-actions-column"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <DndContext
-            key={rankingSlug}
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            collisionDetection={closestCenter}
-            modifiers={[
-              restrictToVerticalAxis,
-              restrictToWindowEdges,
-              restrictToParentElement,
-            ]}
-          >
+      <div className="song-list-scroll">
+        <DndContext
+          key={rankingSlug}
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+          collisionDetection={closestCenter}
+          modifiers={[
+            restrictToVerticalAxis,
+            restrictToWindowEdges,
+            restrictToParentElement,
+          ]}
+        >
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>#</th>
+                <th>Play</th>
+                <th className="youtube-link-column">YT</th>
+                <th>Artysta</th>
+                <th>Tytuł</th>
+                <th>Album</th>
+                <th>Rok wydania</th>
+                <th>Rok odkrycia</th>
+                <th>Komentarz</th>
+                <th className="song-actions-column"></th>
+              </tr>
+            </thead>
+            <tbody>
               <SortableContext
                 key={rankingSlug}
                 items={songs.map((song) => song.id)}
@@ -158,9 +170,10 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
                   />
                 ))}
               </SortableContext>
-          </DndContext>
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </DndContext>
+      </div>
       {isLoggedIn && !isLoading && !error && (
         <div className="form-holder">
           <AddSongForm

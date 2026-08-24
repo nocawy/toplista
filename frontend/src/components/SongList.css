@@ -1,4 +1,14 @@
 /* Table, rows, zebra-formatting */
+.song-list-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.song-list-status {
+  padding: 16px;
+  text-align: center;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
