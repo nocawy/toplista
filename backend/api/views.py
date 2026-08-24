@@ -196,22 +196,16 @@ class AddSong(APIView):
         if not yt_id:
             return Response({"s_yt_id": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Try to find existing song by yt_id
         existing = Song.objects.filter(s_yt_id=yt_id).first()
-        if existing:
-            song = existing
-        else:
+        serializer = None
+        if not existing:
             serializer = SongSerializer(data=data)
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            try:
-                song = serializer.save()
-            except IntegrityError as e:
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Now attach to ranking with next rank
         try:
             with transaction.atomic():
+                song = existing or serializer.save()
                 if RankingEntry.objects.filter(ranking=ranking, song=song).exists():
                     return Response(
                         {"error": "Song already exists in this ranking."},
@@ -220,8 +214,11 @@ class AddSong(APIView):
                 highest = RankingEntry.objects.filter(ranking=ranking).aggregate(Max("r_rank"))["r_rank__max"] or 0
                 new_rank_value = highest + 1
                 RankingEntry.objects.create(ranking=ranking, song=song, r_rank=new_rank_value)
-        except IntegrityError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except IntegrityError:
+            return Response(
+                {"error": "Could not add song to ranking."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Return the created/attached song representation
         return Response(SongSerializer(song).data, status=status.HTTP_201_CREATED)
