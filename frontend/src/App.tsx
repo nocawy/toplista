@@ -11,7 +11,7 @@ import { useMediaSession } from "./hooks/useMediaSession";
 import { usePlaybackQueue } from "./hooks/usePlaybackQueue";
 
 function App() {
-  const { songs, setSongs, songsSlug } = useSongs();
+  const { songs, setSongs, songsSlug, isLoading, error, refreshSongs } = useSongs();
   const { currentSlug } = useRanking();
   const songListRef = useRef<SongListHandle>(null);
   const {
@@ -48,6 +48,8 @@ function App() {
   // tabs) in the ranking the queue belongs to.
   const isQueueRankingVisible = currentSlug === queueSlug;
   const playingSlug = currentDisplaySong ? queueSlug : null;
+  const isCurrentRankingLoaded = songsSlug === currentSlug;
+  const visibleSongs = isCurrentRankingLoaded ? songs : [];
 
   return (
     <div className="App">
@@ -71,8 +73,12 @@ function App() {
         />
         <SongList
           ref={songListRef}
-          songs={songs}
+          songs={visibleSongs}
           setSongs={setSongs}
+          rankingSlug={currentSlug}
+          refreshSongs={refreshSongs}
+          isLoading={isLoading || !isCurrentRankingLoaded}
+          error={error}
           queueMode={queueMode}
           queuedSongIds={queuedSongIds}
           currentSongId={currentDisplaySong?.id ?? null}

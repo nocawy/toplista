@@ -14,7 +14,6 @@ import {
   faTrashAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import {
-  fetchSongs,
   updateSong,
   deleteSong,
   updateSongRank,
@@ -40,7 +39,8 @@ interface SongProps {
   song: Song;
   index: number; // row number
   songsCount: number;
-  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  rankingSlug: string;
+  refreshSongs: (slug?: string) => Promise<Song[] | null>;
   isQueued?: boolean;
   isCurrentlyPlaying?: boolean;
   onPlaySong: (song: Song) => void;
@@ -50,7 +50,8 @@ const SongComponent: React.FC<SongProps> = ({
   song,
   index,
   songsCount,
-  setSongs,
+  rankingSlug,
+  refreshSongs,
   isQueued = false,
   isCurrentlyPlaying = false,
   onPlaySong,
@@ -109,17 +110,19 @@ const SongComponent: React.FC<SongProps> = ({
   }, []); // Empty dependency array means this effect runs once on mount
 
   const refreshSongList = async () => {
-    // Re-fetch the updated list of songs from the backend to reflect any changes
-    const updatedSongsList = await fetchSongs();
-    // Use setSongs to update the SongList component with the newly fetched list
-    setSongs(updatedSongsList);
+    const updatedSongsList = await refreshSongs(rankingSlug);
+    if (!updatedSongsList) {
+      throw new Error("Could not refresh ranking");
+    }
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     if (e.target.name === "r_rank") {
-      return setrankInput(parseInt(e.target.value, 10));
+      const parsedRank = parseInt(e.target.value, 10);
+      if (!Number.isNaN(parsedRank)) setrankInput(parsedRank);
+      return;
     }
     const { name, value } = e.target;
     const parsedValue = parseSongFieldInput(name, value);
@@ -136,9 +139,9 @@ const SongComponent: React.FC<SongProps> = ({
     }
     if (e.key === "Enter") {
       try {
-        await updateSongRank({ songId: song.id, newRank: rankInput });
+        await updateSongRank({ songId: song.id, newRank: rankInput }, rankingSlug);
         setIsEditingRank(false);
-        refreshSongList();
+        await refreshSongList();
       } catch (err) {
         console.error("Couldn't update rank:", err);
       }
@@ -152,7 +155,7 @@ const SongComponent: React.FC<SongProps> = ({
       await updateSong(editedSong);
       console.log("Song saved successfully");
       // Refresh the song list on the frontend to reflect the update
-      refreshSongList();
+      await refreshSongList();
       setIsEditing(false);
       // Clear errors after successfully adding a new song
       setErrors({});
@@ -171,8 +174,8 @@ const SongComponent: React.FC<SongProps> = ({
     e.preventDefault();
     try {
       if (window.confirm("Czy na pewno chcesz usunąć tę piosenkę?")) {
-        await deleteSong(song.id);
-        refreshSongList();
+        await deleteSong(song.id, rankingSlug);
+        await refreshSongList();
       }
     } catch (error) {
       console.error("Failed to delete the song:", error);

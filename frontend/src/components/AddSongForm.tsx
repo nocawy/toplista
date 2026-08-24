@@ -3,7 +3,6 @@ import { isAxiosError } from "axios";
 import { Song } from "./Song";
 import "./AddSongForm.css";
 import {
-  fetchSongs,
   fetchYouTubeSongSuggestions,
   lookupSongByYtId,
   YouTubeSongSuggestion,
@@ -31,14 +30,16 @@ const isEmptyAutofillValue = (value: Song[AutofillField] | undefined): boolean =
 };
 
 interface AddSongFormProps {
-  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  addNewSong: (newSong: Song) => void;
+  addNewSong: (newSong: Song) => Promise<void>;
+  rankingSlug: string;
+  refreshSongs: (slug?: string) => Promise<Song[] | null>;
   nextRank: number;
 }
 
 const AddSongForm: React.FC<AddSongFormProps> = ({
-  setSongs,
   addNewSong,
+  rankingSlug,
+  refreshSongs,
   nextRank,
 }) => {
   const [newSong, setNewSong] = useState<Song>({
@@ -149,10 +150,10 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
       await addNewSong(newSong);
 
       // Re-fetch the list of songs to include the newly added one
-      const updatedSongsList = await fetchSongs();
-
-      // Update the list of songs in the SongList component using setSongs
-      setSongs(updatedSongsList);
+      const updatedSongsList = await refreshSongs(rankingSlug);
+      if (!updatedSongsList) {
+        throw new Error("Could not refresh ranking");
+      }
 
       // Clear errors after successfully adding a new song
       setErrors({});

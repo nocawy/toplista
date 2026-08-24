@@ -20,14 +20,17 @@ import {
 import "./SongList.css";
 import SongComponent, { Song } from "./Song";
 import AddSongForm from "./AddSongForm";
-import { updateSongRank, addNewSong, fetchSongs } from "../api/songService";
+import { updateSongRank, addNewSong } from "../api/songService";
 import { useAuth } from "../contexts/AuthContext";
-import { useRanking } from "../contexts/RankingContext";
 import type { QueueMode } from "../hooks/usePlaybackQueue";
 
 interface SongListProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  rankingSlug: string;
+  refreshSongs: (slug?: string) => Promise<Song[] | null>;
+  isLoading: boolean;
+  error: string | null;
   queueMode: QueueMode;
   queuedSongIds?: number[];
   currentSongId?: number | null;
@@ -39,11 +42,21 @@ export interface SongListHandle {
 }
 
 const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
-  { songs, setSongs, queueMode, queuedSongIds, currentSongId, onPlaySong },
+  {
+    songs,
+    setSongs,
+    rankingSlug,
+    refreshSongs,
+    isLoading,
+    error,
+    queueMode,
+    queuedSongIds,
+    currentSongId,
+    onPlaySong,
+  },
   ref
 ) {
   const { isLoggedIn } = useAuth();
-  const { currentSlug } = useRanking();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -80,14 +93,14 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
 
       try {
         // 2) Notify the backend to update all affected ranks
-        await updateSongRank({ songId: active.id, newRank: newIndex + 1 });
+        await updateSongRank({ songId: active.id, newRank: newIndex + 1 }, rankingSlug);
 
         // 3) Fetch the updated song list with correct r_rank values from the server
-        const updated = await fetchSongs();
-        setSongs(updated);
+        const updated = await refreshSongs(rankingSlug);
+        if (!updated) return;
       } catch (error) {
-        // 4) On error, rollback the optimistic UI update
-        setSongs((songs) => arrayMove(songs, newIndex, oldIndex));
+        // Revalidate instead of applying a stale rollback after a ranking switch.
+        await refreshSongs(rankingSlug);
         console.error("Error after dragging a song: ", error);
       }
     }
@@ -95,6 +108,8 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
 
   return (
     <div>
+      {isLoading && <div className="song-list-status">Loading ranking…</div>}
+      {error && !isLoading && <div className="song-list-status error">{error}</div>}
       <table>
         <thead>
           <tr>
@@ -113,7 +128,7 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
         </thead>
         <tbody>
           <DndContext
-            key={currentSlug}
+            key={rankingSlug}
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -124,32 +139,34 @@ const SongList = forwardRef<SongListHandle, SongListProps>(function SongList(
               restrictToParentElement,
             ]}
           >
-            <SortableContext
-              key={currentSlug}
-              items={songs.map((song) => song.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {songs.map((song, index) => (
-                <SongComponent
-                  key={song.id}
-                  song={song}
-                  index={index + 1} // pass index+1 so that numbering starts with 1
-                  songsCount={songs.length}
-                  setSongs={setSongs}
-                  isQueued={queueMode === "random" && (queuedSongIds?.includes(song.id) ?? false)}
-                  isCurrentlyPlaying={currentSongId === song.id}
-                  onPlaySong={onPlaySong}
-                />
-              ))}
-            </SortableContext>
+              <SortableContext
+                key={rankingSlug}
+                items={songs.map((song) => song.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {songs.map((song, index) => (
+                  <SongComponent
+                    key={song.id}
+                    song={song}
+                    index={index + 1}
+                    songsCount={songs.length}
+                    rankingSlug={rankingSlug}
+                    refreshSongs={refreshSongs}
+                    isQueued={queueMode === "random" && (queuedSongIds?.includes(song.id) ?? false)}
+                    isCurrentlyPlaying={currentSongId === song.id}
+                    onPlaySong={onPlaySong}
+                  />
+                ))}
+              </SortableContext>
           </DndContext>
         </tbody>
       </table>
-      {isLoggedIn && (
+      {isLoggedIn && !isLoading && !error && (
         <div className="form-holder">
           <AddSongForm
-            setSongs={setSongs}
-            addNewSong={addNewSong}
+            addNewSong={(newSong) => addNewSong(newSong, rankingSlug)}
+            rankingSlug={rankingSlug}
+            refreshSongs={refreshSongs}
             nextRank={songs.length + 1}
           />
         </div>

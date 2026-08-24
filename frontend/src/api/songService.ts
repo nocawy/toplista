@@ -1,7 +1,6 @@
 // api/songService.ts
 import apiClient from "./apiClient";
 import { Song } from "../components/Song";
-import { getCurrentRankingSlug } from "./utilRanking";
 
 export interface YouTubeSongSuggestion {
   s_yt_id: string;
@@ -15,19 +14,14 @@ export interface YouTubeSongSuggestion {
   thumbnail_url: string;
 }
 
-export const fetchSongs = async (slugParam?: string): Promise<Song[]> => {
-  try {
-    const slug = slugParam ?? getCurrentRankingSlug();
-    const response = await fetch(`${process.env.REACT_APP_API_URL}songs/?list=${encodeURIComponent(slug)}`);
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    const songs: Song[] = await response.json();
-    return songs;
-  } catch (error) {
-    console.error("Error getting songs:", error);
-    throw error;
+export const fetchSongs = async (slug: string, signal?: AbortSignal): Promise<Song[]> => {
+  const response = await fetch(`${process.env.REACT_APP_API_URL}songs/?list=${encodeURIComponent(slug)}`, {
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
   }
+  return response.json();
 };
 
 export const lookupSongByYtId = async (ytId: string): Promise<Song | null> => {
@@ -59,9 +53,8 @@ interface SongUpdate {
   newRank: number;
 }
 
-export const updateSongRank = async (songUpdate: SongUpdate) => {
+export const updateSongRank = async (songUpdate: SongUpdate, slug: string) => {
   try {
-    const slug = getCurrentRankingSlug();
     const response = await apiClient.patch(`update/rank/?list=${encodeURIComponent(slug)}`, songUpdate);
     console.log("Successfully updated the song: ", response.data);
   } catch (error) {
@@ -70,9 +63,8 @@ export const updateSongRank = async (songUpdate: SongUpdate) => {
   }
 };
 
-export const addNewSong = async (newSong: Omit<Song, "id">): Promise<void> => {
+export const addNewSong = async (newSong: Omit<Song, "id">, slug: string): Promise<void> => {
   try {
-    const slug = getCurrentRankingSlug();
     const response = await apiClient.post(`songs/add/?list=${encodeURIComponent(slug)}`, newSong);
     console.log("Successfully added new song:", response.data);
   } catch (error) {
@@ -91,9 +83,8 @@ export const updateSong = async (song: Song): Promise<void> => {
   }
 };
 
-export const deleteSong = async (songId: number): Promise<void> => {
+export const deleteSong = async (songId: number, slug: string): Promise<void> => {
   try {
-    const slug = getCurrentRankingSlug();
     const response = await apiClient.delete(`songs/delete/${songId}/?list=${encodeURIComponent(slug)}`);
     console.log("Song deleted successfully:", response.data);
   } catch (error) {
