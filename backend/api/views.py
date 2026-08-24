@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
@@ -15,6 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -23,6 +25,16 @@ from .serializers import LoginSerializer, RankUpdateSerializer, SongSerializer, 
 from .youtube_metadata import YouTubeMetadataError, get_youtube_song_suggestion, is_valid_youtube_id
 
 logger = logging.getLogger(__name__)
+
+
+class LoginRateThrottle(SimpleRateThrottle):
+    rate = getattr(settings, "LOGIN_RATE_LIMIT", "10/min")
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {
+            "scope": "login",
+            "ident": self.get_ident(request),
+        }
 
 
 def _get_selected_ranking(request) -> Ranking:
@@ -281,6 +293,8 @@ def delete_song(request, pk):
 
 
 class LoginAPIView(APIView):
+    throttle_classes = [LoginRateThrottle]
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
