@@ -1,11 +1,13 @@
 # views.py
 import logging
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
 from django.db.models import F, Max
 from django.http import JsonResponse
-import os
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, status
@@ -162,27 +164,30 @@ class UploadCSV(APIView):
 
     def post(self, request, *args, **kwargs):
         csv_file = request.FILES.get("file")
-        if csv_file:
-            if csv_file.size > 1048576:  # 1MB
-                return JsonResponse({"error": "The file is too large. The maximum size is 1MB."}, status=400)
-            backup_dir = ".backup"
-            os.makedirs(backup_dir, exist_ok=True)  # Ensure the backup directory exists
-            file_path = os.path.join(backup_dir, "songs_import.csv")
+        if not csv_file:
+            return JsonResponse({"status": "error", "message": "No file provided"}, status=400)
+        if csv_file.size > 1048576:  # 1MB
+            return JsonResponse({"error": "The file is too large. The maximum size is 1MB."}, status=400)
 
-            with open(file_path, "wb+") as destination:
+        ranking = _get_selected_ranking(request)
+        temporary_path: str | None = None
+        try:
+            # delete=False is required on Windows because call_command reopens the file.
+            with NamedTemporaryFile(mode="wb", suffix=".csv", delete=False) as destination:
+                temporary_path = destination.name
                 for chunk in csv_file.chunks():
                     destination.write(chunk)
 
-            try:
-                # Choose ranking from query params, default to 'main'
-                ranking = _get_selected_ranking(request)
-                call_command("import_songs", file_path, ranking=ranking.slug)
-                return JsonResponse({"status": "success"}, status=200)
-            except Exception as e:
-                return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-        else:
-            return JsonResponse({"status": "error", "message": "No file provided"}, status=400)
+            call_command("import_songs", temporary_path, ranking=ranking.slug)
+            return JsonResponse({"status": "success"}, status=200)
+        except CommandError as exc:
+            return JsonResponse({"status": "error", "message": str(exc)}, status=400)
+        except Exception:
+            logger.exception("Could not import CSV")
+            return JsonResponse({"status": "error", "message": "Could not import CSV"}, status=500)
+        finally:
+            if temporary_path:
+                Path(temporary_path).unlink(missing_ok=True)
 
 
 class AddSong(APIView):
