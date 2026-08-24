@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { fetchLyrics, LyricsPayload } from "../api/lyricsService";
 import type { Song } from "../components/Song";
 import { useSongLyrics } from "./useSongLyrics";
@@ -43,8 +43,12 @@ function LyricsHarness({ song }: { song: Song | null }) {
 }
 
 test("does not render the previous song's lyrics while a new song loads", async () => {
+  let resolveSecond!: (payload: LyricsPayload) => void;
+  const secondRequest = new Promise<LyricsPayload>((resolve) => {
+    resolveSecond = resolve;
+  });
   mockedFetchLyrics.mockResolvedValueOnce(firstLyrics);
-  mockedFetchLyrics.mockImplementationOnce(() => new Promise(() => undefined));
+  mockedFetchLyrics.mockReturnValueOnce(secondRequest);
 
   const { rerender } = render(<LyricsHarness song={baseSong} />);
 
@@ -63,4 +67,9 @@ test("does not render the previous song's lyrics while a new song loads", async 
 
   expect(screen.getByTestId("status")).toHaveTextContent("loading");
   expect(screen.queryByText("First lyrics")).not.toBeInTheDocument();
+
+  await act(async () => {
+    resolveSecond({ ...firstLyrics, plain: "Second lyrics" });
+    await secondRequest;
+  });
 });
