@@ -47,6 +47,11 @@ class RankingSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class RankUpdateSerializer(serializers.Serializer):
+    songId = serializers.IntegerField(min_value=1)
+    newRank = serializers.IntegerField(min_value=1)
+
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()

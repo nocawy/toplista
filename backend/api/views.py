@@ -1,9 +1,10 @@
 # views.py
+import logging
+
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.db.models import F, Max
 from django.http import JsonResponse
-import json
 import os
 from django.shortcuts import get_object_or_404
 
@@ -16,8 +17,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Song, Ranking, RankingEntry
-from .serializers import LoginSerializer, SongSerializer, RankingSerializer
+from .serializers import LoginSerializer, RankUpdateSerializer, SongSerializer, RankingSerializer
 from .youtube_metadata import YouTubeMetadataError, get_youtube_song_suggestion, is_valid_youtube_id
+
+logger = logging.getLogger(__name__)
 
 
 def _get_selected_ranking(request) -> Ranking:
@@ -85,88 +88,56 @@ class RankingDetail(generics.RetrieveUpdateDestroyAPIView):
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def update_rank(request):
-    """
-    Updates the ranking of a song based on the provided song ID and new rank.
+    """Move a song to a new position while keeping ranks gapless."""
+    serializer = RankUpdateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    This function shifts the ranks of all songs affected in the process to maintain
-    a consistent and gapless ranking order. It handles the rank adjustment logic
-    to ensure that all songs between the old and new rank of the updated song
-    are correctly re-ranked.
+    ranking = _get_selected_ranking(request)
+    song_id = serializer.validated_data["songId"]
 
-    This endpoint expects a PATCH request with a JSON body.
-    Expected JSON request format:
-    {
-        "songId": <int>,  # The ID of the song to update
-        "newRank": <int>  # The new rank to assign to the song
-    }
+    try:
+        total_songs = RankingEntry.objects.filter(ranking=ranking).count()
+        new_rank = min(serializer.validated_data["newRank"], total_songs)
 
-    Returns:
-    - A JSON response with a status of 'success' and the updated rank information
-      if the operation is successful.
-    - A JSON response with a status of 'error' and an error message if the operation
-      fails due to reasons such as missing request keys, the song not existing, etc.
-    """
-    if request.method == "PATCH":
-        try:
-            data = json.loads(request.body)
-            ranking = _get_selected_ranking(request)
+        with transaction.atomic():
+            entry = RankingEntry.objects.select_for_update().get(ranking=ranking, song__id=song_id)
+            old_rank: int = entry.r_rank
 
-            # Ensure newRank stays within [1, total_songs]
-            total_songs = RankingEntry.objects.filter(ranking=ranking).count()
-            newRank: int = data["newRank"]
-            if newRank < 1:
-                newRank = 1
-            elif newRank > total_songs:
-                newRank = total_songs
+            if old_rank == new_rank:
+                return JsonResponse({"status": "success", "song_id": entry.song.id, "r_rank": entry.r_rank})
 
-            # Retrieve the ranking entry for the provided song within the selected ranking
-            with transaction.atomic():
-                entry = RankingEntry.objects.select_for_update().get(ranking=ranking, song__id=data["songId"])
-                oldRank: int = entry.r_rank
+            temporary_shift = 1_000_000
 
-                if oldRank == newRank:
-                    return JsonResponse({"status": "success", "song_id": entry.song.id, "r_rank": entry.r_rank})
+            if old_rank < new_rank:
+                RankingEntry.objects.filter(ranking=ranking, r_rank__gt=old_rank, r_rank__lte=new_rank).update(
+                    r_rank=F("r_rank") + temporary_shift
+                )
+                entry.r_rank = new_rank
+                entry.save(update_fields=["r_rank"])
+                RankingEntry.objects.filter(
+                    ranking=ranking,
+                    r_rank__gt=old_rank + temporary_shift,
+                    r_rank__lte=new_rank + temporary_shift,
+                ).update(r_rank=F("r_rank") - (temporary_shift + 1))
+            else:
+                RankingEntry.objects.filter(ranking=ranking, r_rank__gte=new_rank, r_rank__lt=old_rank).update(
+                    r_rank=F("r_rank") + temporary_shift
+                )
+                entry.r_rank = new_rank
+                entry.save(update_fields=["r_rank"])
+                RankingEntry.objects.filter(
+                    ranking=ranking,
+                    r_rank__gte=new_rank + temporary_shift,
+                    r_rank__lt=old_rank + temporary_shift,
+                ).update(r_rank=F("r_rank") - (temporary_shift - 1))
 
-                TEMP_SHIFT = 1_000_000
-
-                if oldRank < newRank:
-                    # Bump the affected range far away to create space
-                    RankingEntry.objects.filter(ranking=ranking, r_rank__gt=oldRank, r_rank__lte=newRank).update(
-                        r_rank=F("r_rank") + TEMP_SHIFT
-                    )
-
-                    # Place the entry into target slot
-                    entry.r_rank = newRank
-                    entry.save(update_fields=["r_rank"])
-
-                    # Collapse the bumped range back by TEMP_SHIFT+1, effectively shifting -1
-                    RankingEntry.objects.filter(
-                        ranking=ranking, r_rank__gt=oldRank + TEMP_SHIFT, r_rank__lte=newRank + TEMP_SHIFT
-                    ).update(r_rank=F("r_rank") - (TEMP_SHIFT + 1))
-                else:
-                    # Bump the affected range far away to create space
-                    RankingEntry.objects.filter(ranking=ranking, r_rank__gte=newRank, r_rank__lt=oldRank).update(
-                        r_rank=F("r_rank") + TEMP_SHIFT
-                    )
-
-                    # Place the entry into target slot
-                    entry.r_rank = newRank
-                    entry.save(update_fields=["r_rank"])
-
-                    # Collapse the bumped range back by TEMP_SHIFT-1, effectively shifting +1
-                    RankingEntry.objects.filter(
-                        ranking=ranking, r_rank__gte=newRank + TEMP_SHIFT, r_rank__lt=oldRank + TEMP_SHIFT
-                    ).update(r_rank=F("r_rank") - (TEMP_SHIFT - 1))
-
-            return JsonResponse({"status": "success", "song_id": entry.song.id, "r_rank": entry.r_rank})
-        except RankingEntry.DoesNotExist:
-            return JsonResponse({"status": "error", "message": "Song is not part of the selected ranking"}, status=404)
-        except KeyError as e:
-            return JsonResponse({"status": "error", "message": f"Missing key in request: {str(e)}"}, status=400)
-        except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
-    else:
-        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+        return JsonResponse({"status": "success", "song_id": entry.song.id, "r_rank": entry.r_rank})
+    except RankingEntry.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Song is not part of the selected ranking"}, status=404)
+    except Exception:
+        logger.exception("Could not update rank for song %s in ranking %s", song_id, ranking.slug)
+        return JsonResponse({"status": "error", "message": "Could not update rank"}, status=500)
 
 
 class UploadCSV(APIView):
