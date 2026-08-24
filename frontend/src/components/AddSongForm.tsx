@@ -264,7 +264,7 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
         {errors.s_comment && <div className="error">{errors.s_comment}</div>}
       </div>
       <div className="form-field add-button">
-        <button type="submit">
+        <button type="submit" aria-label="Add song">
           <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>

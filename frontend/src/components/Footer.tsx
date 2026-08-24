@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
     <div className="footer">
       © {currentYear}
       {" - "}
-      <a href="https://github.com/nocawy/toplista" target="_blank">
+      <a href="https://github.com/nocawy/toplista" target="_blank" rel="noopener noreferrer">
         https://github.com/nocawy/toplista
       </a>
     </div>
