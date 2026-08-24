@@ -17,6 +17,7 @@ const LoginForm: React.FC = () => {
       const success = await handleLogin(user, password);
       if (success) {
         login(user);
+        setPassword("");
         setErrors({});
       }
     } catch (error) {
@@ -43,6 +44,7 @@ const LoginForm: React.FC = () => {
           className="login-form"
           type="password"
           id="password"
+          aria-label="Password"
           placeholder={isDemo ? "type 'demo'" : ""}
           value={password}
           onChange={(e) => setPassword(e.target.value)}

@@ -18,7 +18,6 @@ export const handleLogin = async (
   }
 
   const data = await response.json();
-  console.log("Login successful:", data);
 
   setStorageItem("accessToken", data.access);
   if (data.refresh) {
