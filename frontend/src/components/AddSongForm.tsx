@@ -67,6 +67,11 @@ const AddSongForm: React.FC<AddSongFormProps> = ({
     const { name, value } = e.target;
     const parsedValue = parseSongFieldInput(name, value);
 
+    if (name === "s_yt_id") {
+      lookupSequence.current += 1;
+      setAutofillStatus("");
+    }
+
     if (AUTOFILL_FIELDS.includes(name as AutofillField) && isEmptyAutofillValue(parsedValue as Song[AutofillField])) {
       touchedFields.current.delete(name);
     } else {

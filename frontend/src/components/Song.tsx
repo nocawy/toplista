@@ -81,16 +81,22 @@ const SongComponent: React.FC<SongProps> = ({
 
   useEffect(() => {
     const img = new Image();
+    let cancelled = false;
+    setIsUnavailable(false);
     img.src = `https://img.youtube.com/vi/${song.s_yt_id}/mqdefault.jpg`;
 
     img.onload = () => {
-      if (img.naturalWidth === 120 && img.naturalHeight === 90) {
+      if (!cancelled && img.naturalWidth === 120 && img.naturalHeight === 90) {
         setIsUnavailable(true); // placeholder thumbnail = video probably unavailable
       }
     };
 
     img.onerror = () => {
-      setIsUnavailable(true); // could not load thumbnail at all
+      if (!cancelled) setIsUnavailable(true); // could not load thumbnail at all
+    };
+
+    return () => {
+      cancelled = true;
     };
   }, [song.s_yt_id]);
 
@@ -249,7 +255,12 @@ const SongComponent: React.FC<SongProps> = ({
             )}
           </td>
           <td>
-            <button type="button" className="play-link" onClick={() => onPlaySong(song)}>
+            <button
+              type="button"
+              className="play-link"
+              onClick={() => onPlaySong(song)}
+              aria-label={`Play ${song.s_title}`}
+            >
               &#x23F5;{/* ⏵ */}
             </button>
           </td>
