@@ -95,19 +95,20 @@ const SongComponent: React.FC<SongProps> = ({
   }, [song.s_yt_id]);
 
   useEffect(() => {
-    // Handle key down event to listen for ESC key press
+    if (!isEditing) return undefined;
+
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        // Using `key` instead of `keyCode`
-        setIsEditing(false); // Logic to exit edit mode
+        setEditedSong(song);
+        setErrors({});
+        setIsEditing(false);
       }
     };
     document.addEventListener("keydown", handleEscape);
-    // Clean up event listener on component unmount
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, []); // Empty dependency array means this effect runs once on mount
+  }, [isEditing, song]);
 
   const refreshSongList = async () => {
     const updatedSongsList = await refreshSongs(rankingSlug);
@@ -170,8 +171,7 @@ const SongComponent: React.FC<SongProps> = ({
     }
   };
 
-  const handleDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDelete = async () => {
     try {
       if (window.confirm("Czy na pewno chcesz usunąć tę piosenkę?")) {
         await deleteSong(song.id, rankingSlug);
@@ -180,6 +180,18 @@ const SongComponent: React.FC<SongProps> = ({
     } catch (error) {
       console.error("Failed to delete the song:", error);
     }
+  };
+
+  const startEditing = () => {
+    setEditedSong(song);
+    setErrors({});
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditedSong(song);
+    setErrors({});
+    setIsEditing(false);
   };
 
   const rowClassName = [
@@ -266,7 +278,12 @@ const SongComponent: React.FC<SongProps> = ({
           <td className="song-actions-column">
             {isLoggedIn ? (
               <div className="form-field button">
-                <button className="icon-button" onClick={() => setIsEditing(true)}>
+                <button
+                  type="button"
+                  className="icon-button"
+                  onClick={startEditing}
+                  aria-label={`Edit ${song.s_title}`}
+                >
                   <FontAwesomeIcon icon={faEdit} /> {/* edit */}
                 </button>
               </div>
@@ -278,7 +295,7 @@ const SongComponent: React.FC<SongProps> = ({
       ) : (
         // Song edit form
         <td colSpan={11} className="song-edit-cell">
-          <form className="form-row song-edit-row" autoComplete="off">
+          <form className="form-row song-edit-row" autoComplete="off" onSubmit={handleSave}>
             <div className="form-field yt_id">
               <input
                 name="s_yt_id"
@@ -352,17 +369,17 @@ const SongComponent: React.FC<SongProps> = ({
               )}
             </div>
             <div className="form-field button">
-              <button onClick={handleSave}>
+              <button type="submit" aria-label={`Save ${song.s_title}`}>
                 <FontAwesomeIcon icon={faSave} /> {/* save */}
               </button>
             </div>
             <div className="form-field button">
-              <button onClick={handleDelete}>
+              <button type="button" onClick={handleDelete} aria-label={`Delete ${song.s_title}`}>
                 <FontAwesomeIcon icon={faTrashAlt} /> {/* delete */}
               </button>
             </div>
             <div className="form-field button">
-              <button onClick={() => setIsEditing(false)}>
+              <button type="button" onClick={cancelEditing} aria-label={`Discard changes to ${song.s_title}`}>
                 <FontAwesomeIcon icon={faTimes} /> {/* discard */}
               </button>
             </div>
