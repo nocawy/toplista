@@ -1,27 +1,25 @@
 import { Song } from "../Song";
+import { serializeCSVField } from "../../utils/csv";
 
 interface ExportComponentProps {
   songs: Song[];
 }
 
 const ExportComponent: React.FC<ExportComponentProps> = ({ songs }) => {
-  const escapeCSV = (str: string | number | undefined) =>
-    `"${String(str).replace(/"/g, '""')}"`;
-
   const convertToCSV = (songs: Song[]): string => {
     let csvContent =
       "rank,yt_id,Artist,Title,Album,released,discovered,comment\n";
 
     songs.forEach((song) => {
       const row = [
-        song.r_rank,
-        song.s_yt_id,
-        escapeCSV(song.s_artist ?? ""),
-        escapeCSV(song.s_title),
-        escapeCSV(song.s_album ?? ""),
-        song.s_released,
-        song.s_discovered,
-        escapeCSV(song.s_comment ?? ""),
+        serializeCSVField(song.r_rank),
+        serializeCSVField(song.s_yt_id),
+        serializeCSVField(song.s_artist),
+        serializeCSVField(song.s_title),
+        serializeCSVField(song.s_album),
+        serializeCSVField(song.s_released),
+        serializeCSVField(song.s_discovered),
+        serializeCSVField(song.s_comment),
       ].join(",");
       csvContent += row + "\n";
     });
@@ -39,13 +37,14 @@ const ExportComponent: React.FC<ExportComponentProps> = ({ songs }) => {
     document.body.appendChild(link); // Required for FF
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div>
-      <a className="nav-link" href="#" onClick={downloadCSV}>
+      <button type="button" className="nav-link" onClick={downloadCSV}>
         export
-      </a>
+      </button>
     </div>
   );
 };
