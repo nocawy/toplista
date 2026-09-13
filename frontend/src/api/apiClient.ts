@@ -10,26 +10,47 @@ const apiClient = axios.create({
   // },
 });
 
-// Function to refresh the token
-const refreshToken = async () => {
-  try {
-    const response = await axios.post(
-      `${process.env.REACT_APP_API_URL}token/refresh/`,
-      {
-        refresh: getStorageItem("refreshToken"),
-      }
-    );
-    const { access: newAccessToken } = response.data;
-    setStorageItem("accessToken", newAccessToken);
-    return newAccessToken;
-  } catch (error) {
-    console.error("Error refreshing token:", error);
-    // Handle token refresh error, e.g., by logging out the user
-    if (typeof window.logoutFromApi === "function") {
-      window.logoutFromApi();
-    }
-    throw error; // Rethrow after handling to ensure the original request also fails
+let refreshInFlight: Promise<string> | null = null;
+
+const persistRefreshedSession = (access: string, refresh?: string) => {
+  setStorageItem("accessToken", access);
+  if (refresh) {
+    setStorageItem("refreshToken", refresh);
   }
+};
+
+const requestNewAccessToken = async () => {
+  const refresh = getStorageItem("refreshToken");
+  if (!refresh) {
+    throw new Error("No refresh token");
+  }
+
+  const response = await axios.post(
+    `${process.env.REACT_APP_API_URL}token/refresh/`,
+    { refresh }
+  );
+  const { access: newAccessToken, refresh: newRefreshToken } = response.data;
+  persistRefreshedSession(newAccessToken, newRefreshToken);
+  return newAccessToken as string;
+};
+
+// Coalesce concurrent 401s onto one refresh so a rotated token is not
+// reused (and blacklisted) by a second in-flight request.
+const refreshToken = async () => {
+  if (!refreshInFlight) {
+    refreshInFlight = requestNewAccessToken()
+      .catch((error) => {
+        console.error("Error refreshing token:", error);
+        if (typeof window.logoutFromApi === "function") {
+          window.logoutFromApi();
+        }
+        throw error;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
 };
 
 // Request interceptor to include the JWT token in every request
