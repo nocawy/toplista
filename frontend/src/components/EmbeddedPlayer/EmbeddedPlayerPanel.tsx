@@ -133,12 +133,12 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
       <div className="player-video">
         {currentSong ? (
           <EmbeddedYouTubePlayer
-            key={currentSong.s_yt_id}
             videoId={currentSong.s_yt_id}
             onEnded={onEnded}
-            onPlaybackProgress={({ currentTime: time, duration: videoDuration }) => {
+            onPlaybackProgress={({ videoId, currentTime: time, duration: videoDuration }) => {
+              if (videoId !== currentSong.s_yt_id) return;
               setPlayback({
-                videoId: currentSong.s_yt_id,
+                videoId,
                 currentTime: time,
                 duration: videoDuration > 0 ? videoDuration : null,
               });

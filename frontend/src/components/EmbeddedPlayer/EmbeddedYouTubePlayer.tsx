@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from "react";
 
 type YouTubePlayerState = {
   ENDED: number;
+  PLAYING: number;
+  BUFFERING: number;
 };
 
 type YouTubePlayer = {
@@ -11,9 +13,11 @@ type YouTubePlayer = {
   getCurrentTime: () => number;
   getDuration: () => number;
   getPlayerState: () => number;
+  getVideoData?: () => { video_id?: string };
 };
 
 export type PlaybackProgress = {
+  videoId: string;
   currentTime: number;
   duration: number;
 };
@@ -25,7 +29,8 @@ type YouTubePlayerConstructor = new (
     playerVars?: Record<string, number | string>;
     events?: {
       onReady?: (event: { target: YouTubePlayer }) => void;
-      onStateChange?: (event: { data: number }) => void;
+      onStateChange?: (event: { data: number; target: YouTubePlayer }) => void;
+      onError?: () => void;
     };
   }
 ) => YouTubePlayer;
@@ -67,6 +72,14 @@ const youtubeApiReady = (() => {
   };
 })();
 
+function readLoadedVideoId(player: YouTubePlayer): string | null {
+  try {
+    return player.getVideoData?.()?.video_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 interface EmbeddedYouTubePlayerProps {
   videoId: string;
   onEnded: () => void;
@@ -83,6 +96,7 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({
   const onEndedRef = useRef(onEnded);
   const onPlaybackProgressRef = useRef(onPlaybackProgress);
   const videoIdRef = useRef(videoId);
+  const swapPendingRef = useRef(false);
 
   useEffect(() => {
     onEndedRef.current = onEnded;
@@ -93,12 +107,20 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({
   }, [onPlaybackProgress]);
 
   useEffect(() => {
-    videoIdRef.current = videoId;
-  }, [videoId]);
-
-  useEffect(() => {
     let isMounted = true;
     const container = containerRef.current;
+
+    const reportProgress = (player: YouTubePlayer) => {
+      if (swapPendingRef.current) return;
+      const loadedId = readLoadedVideoId(player);
+      if (loadedId && loadedId !== videoIdRef.current) return;
+
+      onPlaybackProgressRef.current?.({
+        videoId: videoIdRef.current,
+        currentTime: player.getCurrentTime?.() ?? 0,
+        duration: player.getDuration?.() ?? 0,
+      });
+    };
 
     // The YT API replaces the target element with an iframe. Hand it a
     // detached child element instead of the React-rendered div, otherwise
@@ -123,16 +145,27 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({
         events: {
           onReady: (event) => {
             event.target.playVideo();
-            const duration = event.target.getDuration?.() ?? 0;
-            onPlaybackProgressRef.current?.({
-              currentTime: event.target.getCurrentTime?.() ?? 0,
-              duration,
-            });
+            reportProgress(event.target);
           },
           onStateChange: (event) => {
-            if (event.data === youtubeWindow.YT?.PlayerState.ENDED) {
-              onEndedRef.current();
+            const playerState = youtubeWindow.YT?.PlayerState;
+            if (!playerState) return;
+
+            if (event.data === playerState.ENDED) {
+              const endedId = readLoadedVideoId(event.target) ?? videoIdRef.current;
+              if (endedId === videoIdRef.current) {
+                onEndedRef.current();
+              }
+              return;
             }
+
+            if (event.data === playerState.PLAYING || event.data === playerState.BUFFERING) {
+              swapPendingRef.current = false;
+              reportProgress(event.target);
+            }
+          },
+          onError: () => {
+            swapPendingRef.current = false;
           },
         },
       });
@@ -142,10 +175,7 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({
       const player = playerRef.current;
       if (!player?.getCurrentTime) return;
       try {
-        onPlaybackProgressRef.current?.({
-          currentTime: player.getCurrentTime(),
-          duration: player.getDuration?.() ?? 0,
-        });
+        reportProgress(player);
       } catch {
         // Player can throw while a video is still swapping.
       }
@@ -161,8 +191,12 @@ const EmbeddedYouTubePlayer: React.FC<EmbeddedYouTubePlayerProps> = ({
   }, []);
 
   useEffect(() => {
-    if (playerRef.current) {
-      playerRef.current.loadVideoById(videoId);
+    const player = playerRef.current;
+    const shouldLoad = player !== null && videoIdRef.current !== videoId;
+    videoIdRef.current = videoId;
+    if (shouldLoad && player) {
+      swapPendingRef.current = true;
+      player.loadVideoById(videoId);
     }
   }, [videoId]);
 
