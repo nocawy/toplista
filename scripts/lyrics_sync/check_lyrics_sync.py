@@ -1,11 +1,13 @@
-"""Check whether songs' synced lyrics match their YouTube audio, and optionally
-store the correction as each song's lyrics offset.
+"""Pick the lyrics that match each song's YouTube audio best, with their timing,
+and optionally save them for the song.
 
-For every song in a ranking the script asks the Toplista API for the lyrics
-exactly as the player gets them, downloads the video's audio, transcribes it
-with Whisper (word timestamps) and finds the single time shift that lines up
-the most lyrics lines with what is actually sung. A positive shift means the
-lyrics would light up too early; the player's stored offset uses the same sign.
+For every song in a ranking the script asks the Toplista API for all lyrics
+candidates, downloads the video's audio, transcribes it once with Whisper (word
+timestamps) and, for each synced candidate, finds the single time shift that
+lines up the most lines with what is actually sung. The best candidate is the
+one that matches the most lines with the least correction and no tempo drift.
+A positive shift means the lyrics would light up too early; stored lyrics use
+the same sign for their offset.
 
 The dependencies are heavy and not needed by the web app, so install them in a
 separate environment (Node.js or Deno must be installed for YouTube downloads):
@@ -13,14 +15,16 @@ separate environment (Node.js or Deno must be installed for YouTube downloads):
     python -m venv scripts/lyrics_sync/.venv
     scripts/lyrics_sync/.venv/Scripts/python -m pip install -r scripts/lyrics_sync/requirements.txt
 
-Dry run against a local backend, then store offsets through another API:
+Dry run against a local backend, then save the picks through another API:
 
     python scripts/lyrics_sync/check_lyrics_sync.py --ranking main
     python scripts/lyrics_sync/check_lyrics_sync.py --api https://example.com/toplista/backend/api/ --apply
 
---apply logs in as --username with the password from TOPLISTA_PASSWORD or a
-prompt. Songs that already have an offset for the current lyrics are skipped
-unless --overwrite is given. Audio and transcripts are cached in --cache-dir.
+The script logs in as --username with the password from TOPLISTA_PASSWORD or a
+prompt, because listing candidates requires it. Songs whose lyrics were already
+saved (by hand or by an earlier run) are skipped unless --overwrite is given,
+and songs where a lyrics source did not answer are skipped unless
+--allow-incomplete is given. Audio and transcripts are cached in --cache-dir.
 Expect roughly 20-40 s per song with synced lyrics on a GPU.
 """
 from __future__ import annotations
@@ -184,8 +188,31 @@ def verdict(alignment: Alignment | None, min_offset_s: float) -> str:
     return "out of sync"
 
 
+def choose_candidate(candidates: list[dict], words: list[dict]) -> tuple[int, Alignment] | None:
+    """Index and alignment of the candidate that fits the audio best, if any fits.
+
+    Usable candidates match enough lines without drifting; among them, each
+    second of correction needed costs as much as 1% of the lines matching.
+    """
+    best: tuple[float, int, Alignment] | None = None
+    for index, candidate in enumerate(candidates):
+        if not candidate.get("synced") or not candidate.get("lines"):
+            continue
+        alignment = align(candidate["lines"], words)
+        if alignment is None or not alignment.conclusive or alignment.drift_s > MAX_DRIFT_S:
+            continue
+        score = alignment.matched / alignment.eligible - 0.01 * abs(alignment.offset_s)
+        if best is None or score > best[0]:
+            best = (score, index, alignment)
+    return (best[1], best[2]) if best else None
+
+
 class ApiError(Exception):
     pass
+
+
+def _duration_query(duration_s: float | None) -> str:
+    return f"?{urllib.parse.urlencode({'duration': round(duration_s)})}" if duration_s and duration_s > 0 else ""
 
 
 class ToplistaApi:
@@ -201,22 +228,25 @@ class ToplistaApi:
     def songs(self, ranking: str) -> list[dict]:
         return self._request("GET", f"songs/?{urllib.parse.urlencode({'list': ranking})}")
 
-    def lyrics(self, song: dict, duration_s: float | None) -> dict:
-        params = {"title": song["s_title"]}
-        if song.get("s_artist"):
-            params["artist"] = song["s_artist"]
-        if song.get("s_album"):
-            params["album"] = song["s_album"]
-        params["yt_id"] = song["s_yt_id"]
-        if duration_s and duration_s > 0:
-            params["duration"] = str(round(duration_s))
-        return self._request("GET", f"lyrics/?{urllib.parse.urlencode(params)}")
+    def song_lyrics(self, song_id: int, duration_s: float | None) -> dict:
+        return self._request("GET", f"songs/{song_id}/lyrics/{_duration_query(duration_s)}")
 
-    def save_offset(self, song_id: int, offset_ms: int, fingerprint: str) -> None:
+    def candidates(self, song_id: int, duration_s: float | None) -> dict:
+        return self._request("GET", f"songs/{song_id}/lyrics/candidates/{_duration_query(duration_s)}", auth=True)
+
+    def store_lyrics(self, song_id: int, candidate: dict, offset_ms: int) -> None:
         self._request(
-            "PATCH",
-            f"songs/update/{song_id}",
-            {"s_lyrics_offset_ms": offset_ms, "s_lyrics_offset_ref": fingerprint if offset_ms else ""},
+            "PUT",
+            f"songs/{song_id}/lyrics/",
+            {
+                "provider": candidate.get("provider") or "unknown",
+                "source_id": candidate.get("source_id") or "",
+                "instrumental": False,
+                "lines": candidate["lines"],
+                "plain": candidate.get("plain"),
+                "offset_ms": offset_ms,
+                "status": "verified",
+            },
             auth=True,
         )
 
@@ -366,11 +396,14 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--ranking", default="main", help="ranking slug to check (default: main)")
     parser.add_argument("--song-id", type=int, action="append", help="only check this song id (repeatable)")
     parser.add_argument("--limit", type=int, help="check at most this many songs")
-    parser.add_argument("--apply", action="store_true", help="store measured offsets (requires login)")
-    parser.add_argument("--overwrite", action="store_true", help="replace offsets already set for the same lyrics")
-    parser.add_argument("--username", default="admin", help="login for --apply (default: admin)")
+    parser.add_argument("--apply", action="store_true", help="save the picked lyrics and their timing")
+    parser.add_argument("--overwrite", action="store_true", help="also re-pick songs whose lyrics are already saved")
     parser.add_argument(
-        "--min-offset", type=float, default=1.0, help="store only offsets of at least this many seconds"
+        "--allow-incomplete", action="store_true", help="pick even when a lyrics source did not answer"
+    )
+    parser.add_argument("--username", default="admin", help="login name (default: admin)")
+    parser.add_argument(
+        "--min-offset", type=float, default=1.0, help="treat smaller measured offsets as zero (seconds)"
     )
     parser.add_argument("--model", default="large-v3-turbo", help="faster-whisper model name")
     parser.add_argument("--device", choices=["auto", "cuda", "cpu"], default="auto")
@@ -385,50 +418,55 @@ def check_song(song: dict, args, api: ToplistaApi, youtube: YouTubeAudio, transc
     row = {"song_id": song["id"], "artist": song.get("s_artist") or "", "title": song["s_title"], "yt_id": song["s_yt_id"]}
 
     duration_s, info = youtube.duration(song["s_yt_id"])
-    lyrics = api.lyrics(song, duration_s)
-    row["provider"] = lyrics.get("provider") or ""
-    if not lyrics.get("synced") or not lyrics.get("lines"):
-        return {**row, "verdict": "no synced lyrics"}
-    fingerprint = lyrics.get("fingerprint")
-    if not fingerprint:
-        return {**row, "verdict": "skipped", "action": "API returns no lyrics fingerprint; update the backend"}
+    stored = api.song_lyrics(song["id"], duration_s).get("stored")
+    if stored and not args.overwrite:
+        return {**row, "verdict": "skipped", "action": f"keeps lyrics saved {stored['status']}"}
 
-    stored_ms = song.get("s_lyrics_offset_ms") or 0
-    if song.get("s_lyrics_offset_ref") == fingerprint and stored_ms and not args.overwrite:
-        return {**row, "verdict": "skipped", "action": f"keeps offset {stored_ms / 1000:+.1f} s"}
+    listing = api.candidates(song["id"], duration_s)
+    synced = [candidate for candidate in listing["candidates"] if candidate.get("synced") and candidate.get("lines")]
+    row["candidates"] = len(synced)
+    if listing.get("incomplete") and not args.allow_incomplete:
+        return {**row, "verdict": "skipped", "action": "a lyrics source did not answer; try again later"}
+    if not synced:
+        return {**row, "verdict": "no synced lyrics"}
 
     from faster_whisper import decode_audio
 
     audio = decode_audio(str(youtube.download(song["s_yt_id"], info)), sampling_rate=SAMPLE_RATE)
-    transcript = transcriber.transcribe(song["s_yt_id"], audio, guess_language(lyrics["lines"]))
-    alignment = align(lyrics["lines"], transcript["words"])
-    result = verdict(alignment, args.min_offset)
-    if alignment is not None:
-        row.update(
-            offset_s=round(alignment.offset_s, 2),
-            matched=f"{alignment.matched}/{alignment.eligible}",
-            drift_s=round(alignment.drift_s, 2),
-        )
-    row["verdict"] = result
+    transcript = transcriber.transcribe(song["s_yt_id"], audio, guess_language(synced[0]["lines"]))
+    choice = choose_candidate(synced, transcript["words"])
+    if choice is None:
+        fallback = align(synced[0]["lines"], transcript["words"])
+        return {**row, "verdict": verdict(fallback, args.min_offset), "action": "no candidate fits the audio"}
 
-    if result == "out of sync":
-        target_ms = int(round(alignment.offset_s * 10)) * 100
-    elif result == "in sync" and args.overwrite and stored_ms and song.get("s_lyrics_offset_ref") == fingerprint:
-        target_ms = 0
-    else:
-        return row
+    index, alignment = choice
+    candidate = synced[index]
+    result = verdict(alignment, args.min_offset)
+    offset_ms = int(round(alignment.offset_s * 10)) * 100 if result == "out of sync" else 0
+    row.update(
+        provider=candidate.get("provider") or "",
+        pick=f"{index + 1} {candidate.get('label') or ''}".strip(),
+        verdict=result,
+        offset_s=round(alignment.offset_s, 2),
+        matched=f"{alignment.matched}/{alignment.eligible}",
+        drift_s=round(alignment.drift_s, 2),
+    )
     if args.apply:
-        api.save_offset(song["id"], target_ms, fingerprint)
-        row["action"] = f"saved {target_ms / 1000:+.1f} s"
+        api.store_lyrics(song["id"], candidate, offset_ms)
+        row["action"] = f"saved candidate {index + 1} with {offset_ms / 1000:+.1f} s"
     else:
-        row["action"] = f"would save {target_ms / 1000:+.1f} s"
+        row["action"] = f"would save candidate {index + 1} with {offset_ms / 1000:+.1f} s"
     return row
 
 
 def describe(row: dict) -> str:
     parts = [row["verdict"]]
+    if "candidates" in row:
+        parts.append(f"{row['candidates']} synced candidates")
     if "offset_s" in row:
         parts.append(f"offset {row['offset_s']:+.2f} s (matched {row['matched']} lines, drift {row['drift_s']:.2f} s)")
+    if row.get("pick"):
+        parts.append(f"pick: {row['provider']} {row['pick']}")
     if row.get("action"):
         parts.append(row["action"])
     return ", ".join(parts)
@@ -437,9 +475,8 @@ def describe(row: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     api = ToplistaApi(args.api)
-    if args.apply:
-        password = os.environ.get("TOPLISTA_PASSWORD") or getpass.getpass(f"Password for {args.username}: ")
-        api.login(args.username, password)
+    password = os.environ.get("TOPLISTA_PASSWORD") or getpass.getpass(f"Password for {args.username}: ")
+    api.login(args.username, password)
 
     songs = api.songs(args.ranking)
     if args.song_id:
@@ -463,7 +500,10 @@ def main(argv: list[str] | None = None) -> int:
     counts = collections.Counter(row["verdict"] for row in rows)
     print("\nSummary: " + ", ".join(f"{verdict_name} {count}" for verdict_name, count in counts.most_common()))
     if args.report:
-        columns = ["song_id", "artist", "title", "yt_id", "provider", "verdict", "offset_s", "matched", "drift_s", "action"]
+        columns = [
+            "song_id", "artist", "title", "yt_id", "candidates", "provider", "pick",
+            "verdict", "offset_s", "matched", "drift_s", "action",
+        ]
         with args.report.open("w", newline="", encoding="utf-8") as report:
             writer = csv.DictWriter(report, fieldnames=columns, extrasaction="ignore")
             writer.writeheader()
