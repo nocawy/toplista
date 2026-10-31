@@ -74,13 +74,26 @@ export const addNewSong = async (newSong: Omit<Song, "id">, slug: string): Promi
 };
 
 export const updateSong = async (song: Song): Promise<void> => {
+  // The lyrics offset is owned by the lyrics panel; a stale copy here must not overwrite it.
+  const { s_lyrics_offset_ms, s_lyrics_offset_ref, ...editableFields } = song;
   try {
-    const response = await apiClient.patch(`songs/update/${song.id}`, song);
+    const response = await apiClient.patch(`songs/update/${song.id}`, editableFields);
     console.log("Song updated successfully:", response.data);
   } catch (error) {
     console.error("Error updateSong:", error);
     throw error; // Re-throwing the error to be handled by the caller
   }
+};
+
+export const updateSongLyricsOffset = async (
+  songId: number,
+  offsetMs: number,
+  lyricsFingerprint: string
+): Promise<void> => {
+  await apiClient.patch(`songs/update/${songId}`, {
+    s_lyrics_offset_ms: offsetMs,
+    s_lyrics_offset_ref: offsetMs === 0 ? "" : lyricsFingerprint,
+  });
 };
 
 export const deleteSong = async (songId: number, slug: string): Promise<void> => {

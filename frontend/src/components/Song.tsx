@@ -30,6 +30,8 @@ export interface Song {
   s_released: number | null;
   s_discovered: string | null;
   s_comment: string | null;
+  s_lyrics_offset_ms?: number;
+  s_lyrics_offset_ref?: string;
   s_last_updated: string;
   s_created_on: string;
   r_rank: number;

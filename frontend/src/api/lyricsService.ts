@@ -7,6 +7,7 @@ export interface LyricsPayload {
   synced: boolean;
   lines: LyricsLine[];
   plain: string | null;
+  fingerprint?: string | null;
 }
 
 export interface LyricsQuery {

@@ -28,6 +28,40 @@
   font-weight: 500;
 }
 
+.player-lyrics-offset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+}
+
+.player-lyrics-offset-button {
+  border: 1px solid #626977;
+  border-radius: 4px;
+  background-color: #474c57;
+  color: white;
+  padding: 1px 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.player-lyrics-offset-value {
+  min-width: 4.5em;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-lyrics-offset-value:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.player-lyrics-offset-error {
+  color: #ffb4a8;
+}
+
 .player-lyrics-body {
   flex: 1;
   min-height: 0;

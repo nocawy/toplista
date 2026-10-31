@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { Song } from "../Song";
+import LyricsOffsetControls from "./LyricsOffsetControls";
 import { useSongLyrics } from "../../hooks/useSongLyrics";
+import { useLyricsOffset } from "../../hooks/useLyricsOffset";
 import { findActiveLyricIndex } from "../../utils/lyrics";
 import "./LyricsPanel.css";
 
@@ -8,14 +10,17 @@ interface LyricsPanelProps {
   song: Song | null;
   currentTimeSeconds: number;
   durationSeconds: number | null;
+  canAdjustOffset?: boolean;
 }
 
 const LyricsPanel: React.FC<LyricsPanelProps> = ({
   song,
   currentTimeSeconds,
   durationSeconds,
+  canAdjustOffset = false,
 }) => {
   const { lyrics, status } = useSongLyrics(song, durationSeconds);
+  const lyricsOffset = useLyricsOffset(song, lyrics?.synced ? lyrics.fingerprint : null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLDivElement | null>(null);
   const previousIndexRef = useRef(-1);
@@ -23,7 +28,10 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
 
   const activeIndex =
     lyrics?.synced && lyrics.lines.length
-      ? findActiveLyricIndex(lyrics.lines, Math.max(0, currentTimeSeconds) * 1000)
+      ? findActiveLyricIndex(
+          lyrics.lines,
+          Math.max(0, currentTimeSeconds) * 1000 - lyricsOffset.offsetMs
+        )
       : -1;
 
   const centerActiveLine = useCallback((behavior: ScrollBehavior) => {
@@ -63,6 +71,14 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
         </div>
       ) : (
         <div className="player-current-song player-lyrics-empty">No song playing</div>
+      )}
+      {canAdjustOffset && lyricsOffset.canAdjust && (
+        <LyricsOffsetControls
+          offsetMs={lyricsOffset.offsetMs}
+          saveStatus={lyricsOffset.saveStatus}
+          onAdjust={lyricsOffset.adjust}
+          onReset={lyricsOffset.reset}
+        />
       )}
       <div
         className="player-lyrics-body"
