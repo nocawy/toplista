@@ -25,3 +25,5 @@ class LyricsResult:
     synced: bool = False
     lines: list[LyricLine] = field(default_factory=list)
     plain: str | None = None
+    # A fallback answer; the provider may return a better match once it recovers.
+    degraded: bool = False

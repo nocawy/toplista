@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from urllib.parse import urlencode
 
-from ..http import get_json
+from ..http import ProviderUnavailable, get_json
 from ..lrc import parse_lrc, plain_from_lines
 from ..types import LyricsQuery, LyricsResult
 from .base import LyricProvider
@@ -18,13 +19,24 @@ class LrclibProvider(LyricProvider):
             return None
 
         record = None
+        exact_lookup_failed: ProviderUnavailable | None = None
         if query.artist:
-            record = self._get(query)
+            try:
+                record = self._get(query)
+            except ProviderUnavailable as exc:
+                exact_lookup_failed = exc
         if record is None:
             record = self._search(query)
         if not isinstance(record, dict):
+            if exact_lookup_failed is not None:
+                raise exact_lookup_failed
             return None
-        return self._to_result(record)
+        result = self._to_result(record)
+        if result is not None and exact_lookup_failed is not None:
+            # /get can return lyrics timed for this exact recording, which
+            # search results (closest duration only) often are not.
+            return replace(result, degraded=True)
+        return result
 
     def _get(self, query: LyricsQuery) -> dict | None:
         params = {

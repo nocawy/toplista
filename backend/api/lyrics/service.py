@@ -7,6 +7,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 
+from .http import ProviderUnavailable
 from .providers import PROVIDER_REGISTRY, LyricProvider
 from .types import LyricLine, LyricsQuery, LyricsResult
 
@@ -87,29 +88,39 @@ def fetch_lyrics(query: LyricsQuery, providers: list[LyricProvider] | None = Non
         return cached
 
     selected_providers = providers if providers is not None else default_providers()
-    result = _resolve(query, selected_providers)
+    result, provider_failed = _resolve(query, selected_providers)
     payload = result_to_payload(result)
-    ttl = (
-        int(getattr(settings, "LYRICS_CACHE_TTL", 60 * 60 * 24))
-        if result is not None
-        else int(getattr(settings, "LYRICS_CACHE_MISS_TTL", 60 * 10))
-    )
+    if provider_failed:
+        # A preferred provider may have better lyrics once it recovers.
+        ttl = int(getattr(settings, "LYRICS_CACHE_DEGRADED_TTL", 60 * 2))
+    elif result is not None:
+        ttl = int(getattr(settings, "LYRICS_CACHE_TTL", 60 * 60 * 24))
+    else:
+        ttl = int(getattr(settings, "LYRICS_CACHE_MISS_TTL", 60 * 10))
     cache.set(key, payload, ttl)
     return payload
 
 
-def _resolve(query: LyricsQuery, providers: list[LyricProvider]) -> LyricsResult | None:
+def _resolve(query: LyricsQuery, providers: list[LyricProvider]) -> tuple[LyricsResult | None, bool]:
+    """Return the best result and whether any consulted provider failed to answer."""
     best_plain: LyricsResult | None = None
+    provider_failed = False
     for provider in providers:
         try:
             result = provider.fetch(query)
+        except ProviderUnavailable as exc:
+            logger.info("lyrics provider %s unavailable: %s", provider.name, exc)
+            provider_failed = True
+            continue
         except Exception:
             logger.exception("lyrics provider %s failed", provider.name)
+            provider_failed = True
             continue
         if result is None:
             continue
+        provider_failed = provider_failed or result.degraded
         if result.instrumental or result.synced:
-            return result
+            return result, provider_failed
         if best_plain is None and result.plain:
             best_plain = result
-    return best_plain
+    return best_plain, provider_failed

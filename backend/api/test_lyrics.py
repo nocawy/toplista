@@ -1,11 +1,14 @@
-from unittest.mock import patch
+import json
+from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError, URLError
 
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 
+from .lyrics.http import ProviderUnavailable, get_json
 from .lyrics.lrc import parse_lrc
 from .lyrics.providers.base import LyricProvider
-from .lyrics.providers.lrclib import _pick_search_result
+from .lyrics.providers.lrclib import LrclibProvider, _pick_search_result
 from .lyrics.service import cache_key, fetch_lyrics
 from .lyrics.types import LyricLine, LyricsQuery, LyricsResult
 from .lyrics.views import LyricsRateThrottle
@@ -65,6 +68,88 @@ class LrclibResultSelectionTests(TestCase):
         self.assertIn("syncedLyrics", result)
 
 
+def _json_response(payload):
+    response = MagicMock()
+    response.headers = {}
+    response.read.return_value = json.dumps(payload).encode("utf-8")
+    response.__enter__.return_value = response
+    return response
+
+
+def _http_error(code: int) -> HTTPError:
+    return HTTPError("https://lyrics.example", code, "error", {}, None)
+
+
+@override_settings(LYRICS_HTTP_RETRIES=1, LYRICS_HTTP_RETRY_DELAY=0)
+class GetJsonTests(TestCase):
+    @patch("api.lyrics.http.urlopen")
+    def test_not_found_means_no_lyrics(self, mock_urlopen):
+        mock_urlopen.side_effect = _http_error(404)
+
+        self.assertIsNone(get_json("https://lyrics.example"))
+
+    @patch("api.lyrics.http.urlopen")
+    def test_retries_when_server_is_busy(self, mock_urlopen):
+        mock_urlopen.side_effect = [_http_error(503), _json_response({"ok": True})]
+
+        self.assertEqual(get_json("https://lyrics.example"), {"ok": True})
+        self.assertEqual(mock_urlopen.call_count, 2)
+
+    @patch("api.lyrics.http.urlopen")
+    def test_persistent_overload_is_reported_as_unavailable(self, mock_urlopen):
+        mock_urlopen.side_effect = [_http_error(503), _http_error(503)]
+
+        with self.assertRaises(ProviderUnavailable):
+            get_json("https://lyrics.example")
+
+    @patch("api.lyrics.http.urlopen")
+    def test_network_failure_is_reported_as_unavailable(self, mock_urlopen):
+        mock_urlopen.side_effect = URLError("connection reset")
+
+        with self.assertRaises(ProviderUnavailable):
+            get_json("https://lyrics.example")
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch("api.lyrics.http.urlopen")
+    def test_client_error_means_no_lyrics(self, mock_urlopen):
+        mock_urlopen.side_effect = _http_error(400)
+
+        self.assertIsNone(get_json("https://lyrics.example"))
+
+
+class LrclibProviderTests(TestCase):
+    query = LyricsQuery(title="Song", artist="Artist", duration=200)
+
+    @patch("api.lyrics.providers.lrclib.get_json")
+    def test_falls_back_to_search_when_exact_lookup_is_busy(self, mock_get_json):
+        mock_get_json.side_effect = [
+            ProviderUnavailable("HTTP 503"),
+            [{"duration": 200, "syncedLyrics": "[00:01.00]Hello"}],
+        ]
+
+        result = LrclibProvider().fetch(self.query)
+
+        self.assertTrue(result.synced)
+        self.assertEqual(result.lines[0].text, "Hello")
+        self.assertTrue(result.degraded)
+
+    @patch("api.lyrics.providers.lrclib.get_json")
+    def test_exact_lookup_result_is_not_degraded(self, mock_get_json):
+        mock_get_json.return_value = {"duration": 200, "syncedLyrics": "[00:01.00]Hello"}
+
+        result = LrclibProvider().fetch(self.query)
+
+        self.assertFalse(result.degraded)
+        self.assertEqual(mock_get_json.call_count, 1)
+
+    @patch("api.lyrics.providers.lrclib.get_json")
+    def test_busy_exact_lookup_and_empty_search_is_not_a_miss(self, mock_get_json):
+        mock_get_json.side_effect = [ProviderUnavailable("HTTP 503"), []]
+
+        with self.assertRaises(ProviderUnavailable):
+            LrclibProvider().fetch(self.query)
+
+
 class FakeProvider(LyricProvider):
     def __init__(self, name: str, result: LyricsResult | None):
         self.name = name
@@ -72,6 +157,21 @@ class FakeProvider(LyricProvider):
 
     def fetch(self, query: LyricsQuery) -> LyricsResult | None:
         return self._result
+
+
+class UnavailableProvider(LyricProvider):
+    name = "busy"
+
+    def fetch(self, query: LyricsQuery) -> LyricsResult | None:
+        raise ProviderUnavailable("HTTP 503")
+
+
+SYNCED_FALLBACK = LyricsResult(
+    provider="fallback",
+    synced=True,
+    lines=[LyricLine(start_ms=1000, text="Hello")],
+    plain="Hello",
+)
 
 
 class FetchLyricsServiceTests(TestCase):
@@ -126,6 +226,55 @@ class FetchLyricsServiceTests(TestCase):
         second = cache_key(LyricsQuery(artist="a", title="b|c"))
 
         self.assertNotEqual(first, second)
+
+    @override_settings(LYRICS_CACHE_TTL=86_400, LYRICS_CACHE_DEGRADED_TTL=120)
+    def test_fallback_after_provider_outage_is_cached_briefly(self):
+        with patch.object(cache, "set", wraps=cache.set) as mock_set:
+            payload = fetch_lyrics(
+                LyricsQuery(title="Outage"),
+                providers=[UnavailableProvider(), FakeProvider("fallback", SYNCED_FALLBACK)],
+            )
+
+        self.assertEqual(payload["provider"], "fallback")
+        self.assertEqual(mock_set.call_args[0][2], 120)
+
+    @override_settings(LYRICS_CACHE_TTL=86_400, LYRICS_CACHE_DEGRADED_TTL=120)
+    def test_degraded_provider_answer_is_cached_briefly(self):
+        degraded = LyricsResult(
+            provider="fallback",
+            synced=True,
+            lines=[LyricLine(start_ms=1000, text="Hello")],
+            degraded=True,
+        )
+        with patch.object(cache, "set", wraps=cache.set) as mock_set:
+            payload = fetch_lyrics(
+                LyricsQuery(title="Search fallback"),
+                providers=[FakeProvider("fallback", degraded)],
+            )
+
+        self.assertEqual(payload["provider"], "fallback")
+        self.assertEqual(mock_set.call_args[0][2], 120)
+
+    @override_settings(LYRICS_CACHE_MISS_TTL=600, LYRICS_CACHE_DEGRADED_TTL=120)
+    def test_miss_during_provider_outage_is_cached_briefly(self):
+        with patch.object(cache, "set", wraps=cache.set) as mock_set:
+            payload = fetch_lyrics(
+                LyricsQuery(title="Outage miss"),
+                providers=[UnavailableProvider(), FakeProvider("empty", None)],
+            )
+
+        self.assertFalse(payload["found"])
+        self.assertEqual(mock_set.call_args[0][2], 120)
+
+    @override_settings(LYRICS_CACHE_TTL=86_400, LYRICS_CACHE_DEGRADED_TTL=120)
+    def test_result_from_healthy_providers_is_cached_long(self):
+        with patch.object(cache, "set", wraps=cache.set) as mock_set:
+            fetch_lyrics(
+                LyricsQuery(title="Healthy"),
+                providers=[FakeProvider("fallback", SYNCED_FALLBACK), UnavailableProvider()],
+            )
+
+        self.assertEqual(mock_set.call_args[0][2], 86_400)
 
     @patch("api.lyrics.service.default_providers")
     def test_explicit_empty_provider_list_does_not_use_defaults(self, mock_defaults):
