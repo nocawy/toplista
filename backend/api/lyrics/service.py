@@ -17,7 +17,7 @@ CACHE_PREFIX = "lyrics:v2:"
 
 
 def lyrics_fingerprint(lines: list[LyricLine]) -> str | None:
-    """Identify one timing of the lyrics, so per-song offsets apply only to it."""
+    """Identify one timing of the lyrics, to tell otherwise similar files apart."""
     if not lines:
         return None
     raw = json.dumps([[line.start_ms, line.text] for line in lines], ensure_ascii=False, separators=(",", ":"))
