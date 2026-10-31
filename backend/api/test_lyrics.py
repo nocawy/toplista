@@ -28,20 +28,25 @@ class ParseLrcTests(TestCase):
         self.assertEqual(lines[1].start_ms, 31_000)
         self.assertEqual(lines[2].start_ms, 63_270)
 
-    def test_applies_offset_and_strips_enhanced_tags(self):
+    def test_positive_offset_shows_lyrics_sooner_and_strips_enhanced_tags(self):
         lines = parse_lrc(
             "[offset:500]\n"
             "[00:01.00] <00:01.00> Hello <00:01.40> world\n"
         )
 
         self.assertEqual(len(lines), 1)
-        self.assertEqual(lines[0].start_ms, 1_500)
+        self.assertEqual(lines[0].start_ms, 500)
         self.assertEqual(lines[0].text, "Hello  world")
+
+    def test_negative_offset_shows_lyrics_later(self):
+        lines = parse_lrc("[offset:-500]\n[00:01.00]Hello\n")
+
+        self.assertEqual(lines[0].start_ms, 1_500)
 
     def test_applies_offset_declared_after_lyrics(self):
         lines = parse_lrc("[00:01.00]Hello\n[offset:500]\n")
 
-        self.assertEqual(lines[0].start_ms, 1_500)
+        self.assertEqual(lines[0].start_ms, 500)
 
 
 class LrclibResultSelectionTests(TestCase):

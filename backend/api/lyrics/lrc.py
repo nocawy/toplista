@@ -54,11 +54,12 @@ def parse_lrc(lrc: str | None) -> list[LyricLine]:
             continue
 
         for match in timestamps:
+            # A positive [offset:] makes lyrics appear sooner.
             start_ms = (
                 int(match.group(1)) * 60_000
                 + int(match.group(2)) * 1_000
                 + _fraction_to_ms(match.group(3))
-                + offset_ms
+                - offset_ms
             )
             events.append((max(0, start_ms), text))
 
