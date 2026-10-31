@@ -51,6 +51,8 @@ SEARCH_RANGE_S = 120.0
 SEARCH_STEP_S = 0.25
 MIN_MATCH_SCORE = 72
 MAX_DRIFT_S = 2.0
+# The production host throttles Python's default user agent after one request.
+USER_AGENT = "Toplista-lyrics-sync/1.0 (https://github.com/nocawy/toplista)"
 EN_WORDS = {"the", "you", "and", "i", "me", "my", "to", "a", "it", "in", "is", "of", "on", "your", "we", "be", "love", "all"}
 
 
@@ -228,7 +230,7 @@ class ToplistaApi:
         data = json.dumps(body).encode("utf-8") if body is not None else None
         refreshed = False
         for _ in range(6):
-            headers = {"Accept": "application/json"}
+            headers = {"Accept": "application/json", "User-Agent": USER_AGENT}
             if data is not None:
                 headers["Content-Type"] = "application/json"
             if auth and self.access:

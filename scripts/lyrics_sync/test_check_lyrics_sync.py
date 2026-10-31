@@ -1,6 +1,7 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
-from check_lyrics_sync import align, guess_language, normalize, verdict
+from check_lyrics_sync import USER_AGENT, ToplistaApi, align, guess_language, normalize, verdict
 
 VERSE = [
     "oh life is bigger",
@@ -68,6 +69,20 @@ class AlignTests(unittest.TestCase):
         result = align(lrc(VERSE), transcript(other, start_s=10.0))
 
         self.assertEqual(verdict(result, min_offset_s=1.0), "inconclusive")
+
+
+class ToplistaApiTests(unittest.TestCase):
+    @patch("check_lyrics_sync.urllib.request.urlopen")
+    def test_identifies_itself_to_the_server(self, mock_urlopen):
+        response = MagicMock()
+        response.read.return_value = b"[]"
+        mock_urlopen.return_value.__enter__.return_value = response
+
+        ToplistaApi("https://example.com/toplista/backend/api").songs("main")
+
+        request = mock_urlopen.call_args[0][0]
+        self.assertEqual(request.full_url, "https://example.com/toplista/backend/api/songs/?list=main")
+        self.assertEqual(request.get_header("User-agent"), USER_AGENT)
 
 
 class TextTests(unittest.TestCase):
