@@ -1,0 +1,7 @@
+faster-whisper>=1.1
+# PyAV 14+ ships DLLs that Windows Smart App Control blocks; 13.x loads fine.
+av>=11,<14
+rapidfuzz>=3
+yt-dlp>=2026.10.26
+# CUDA runtime for GPU transcription on Windows; the script falls back to CPU without it.
+nvidia-cublas-cu12; sys_platform == "win32"
