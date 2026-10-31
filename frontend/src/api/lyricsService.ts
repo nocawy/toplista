@@ -1,4 +1,14 @@
+import apiClient from "./apiClient";
 import type { LyricsLine } from "../utils/lyrics";
+
+export type StoredLyricsStatus = "manual" | "verified";
+
+export interface StoredLyricsInfo {
+  status: StoredLyricsStatus;
+  offset_ms: number;
+  source_id: string;
+  updated_on: string;
+}
 
 export interface LyricsPayload {
   found: boolean;
@@ -8,34 +18,47 @@ export interface LyricsPayload {
   lines: LyricsLine[];
   plain: string | null;
   fingerprint?: string | null;
+  /** Set when these lyrics were chosen and saved for the song. */
+  stored?: StoredLyricsInfo | null;
 }
 
-export interface LyricsQuery {
-  title: string;
-  artist?: string | null;
-  album?: string | null;
-  duration?: number | null;
-  ytId?: string | null;
+export interface StoredLyricsInput {
+  provider: string;
+  source_id: string;
+  instrumental: boolean;
+  lines: LyricsLine[];
+  plain: string | null;
+  offset_ms: number;
 }
 
-export const fetchLyrics = async (
-  query: LyricsQuery,
+export const fetchSongLyrics = async (
+  songId: number,
+  duration: number | null,
   signal?: AbortSignal
 ): Promise<LyricsPayload> => {
   const params = new URLSearchParams();
-  params.set("title", query.title);
-  if (query.artist) params.set("artist", query.artist);
-  if (query.album) params.set("album", query.album);
-  if (query.ytId) params.set("yt_id", query.ytId);
-  if (query.duration && query.duration > 0) {
-    params.set("duration", String(Math.round(query.duration)));
+  if (duration && duration > 0) {
+    params.set("duration", String(Math.round(duration)));
   }
-
-  const response = await fetch(`${process.env.REACT_APP_API_URL}lyrics/?${params.toString()}`, {
-    signal,
-  });
+  const query = params.toString();
+  const response = await fetch(
+    `${process.env.REACT_APP_API_URL}songs/${songId}/lyrics/${query ? `?${query}` : ""}`,
+    { signal }
+  );
   if (!response.ok) {
     throw new Error("Lyrics lookup failed");
   }
   return response.json();
+};
+
+export const saveSongLyrics = async (
+  songId: number,
+  lyrics: StoredLyricsInput
+): Promise<LyricsPayload> => {
+  const response = await apiClient.put(`songs/${songId}/lyrics/`, lyrics);
+  return response.data;
+};
+
+export const forgetSongLyrics = async (songId: number): Promise<void> => {
+  await apiClient.delete(`songs/${songId}/lyrics/`);
 };

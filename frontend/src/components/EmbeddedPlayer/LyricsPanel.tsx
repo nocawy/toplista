@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { Song } from "../Song";
-import LyricsOffsetControls from "./LyricsOffsetControls";
+import LyricsEditorControls from "./LyricsEditorControls";
 import { useSongLyrics } from "../../hooks/useSongLyrics";
-import { useLyricsOffset } from "../../hooks/useLyricsOffset";
+import { useLyricsEditor } from "../../hooks/useLyricsEditor";
 import { findActiveLyricIndex } from "../../utils/lyrics";
 import "./LyricsPanel.css";
 
@@ -10,17 +10,22 @@ interface LyricsPanelProps {
   song: Song | null;
   currentTimeSeconds: number;
   durationSeconds: number | null;
-  canAdjustOffset?: boolean;
+  canEditLyrics?: boolean;
 }
 
 const LyricsPanel: React.FC<LyricsPanelProps> = ({
   song,
   currentTimeSeconds,
   durationSeconds,
-  canAdjustOffset = false,
+  canEditLyrics = false,
 }) => {
-  const { lyrics, status } = useSongLyrics(song, durationSeconds);
-  const lyricsOffset = useLyricsOffset(song, lyrics?.synced ? lyrics.fingerprint : null);
+  const { lyrics: loadedLyrics, status, replaceLyrics, reload } = useSongLyrics(song, durationSeconds);
+  const editor = useLyricsEditor(song, loadedLyrics, {
+    enabled: canEditLyrics,
+    onSaved: replaceLyrics,
+    onForgotten: reload,
+  });
+  const lyrics = editor.lyrics;
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLDivElement | null>(null);
   const previousIndexRef = useRef(-1);
@@ -30,7 +35,7 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
     lyrics?.synced && lyrics.lines.length
       ? findActiveLyricIndex(
           lyrics.lines,
-          Math.max(0, currentTimeSeconds) * 1000 - lyricsOffset.offsetMs
+          Math.max(0, currentTimeSeconds) * 1000 - editor.offsetMs
         )
       : -1;
 
@@ -72,14 +77,7 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
       ) : (
         <div className="player-current-song player-lyrics-empty">No song playing</div>
       )}
-      {canAdjustOffset && lyricsOffset.canAdjust && (
-        <LyricsOffsetControls
-          offsetMs={lyricsOffset.offsetMs}
-          saveStatus={lyricsOffset.saveStatus}
-          onAdjust={lyricsOffset.adjust}
-          onReset={lyricsOffset.reset}
-        />
-      )}
+      {editor.canEdit && <LyricsEditorControls editor={editor} />}
       <div
         className="player-lyrics-body"
         ref={bodyRef}

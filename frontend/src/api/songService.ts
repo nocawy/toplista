@@ -85,17 +85,6 @@ export const updateSong = async (song: Song): Promise<void> => {
   }
 };
 
-export const updateSongLyricsOffset = async (
-  songId: number,
-  offsetMs: number,
-  lyricsFingerprint: string
-): Promise<void> => {
-  await apiClient.patch(`songs/update/${songId}`, {
-    s_lyrics_offset_ms: offsetMs,
-    s_lyrics_offset_ref: offsetMs === 0 ? "" : lyricsFingerprint,
-  });
-};
-
 export const deleteSong = async (songId: number, slug: string): Promise<void> => {
   try {
     const response = await apiClient.delete(`songs/delete/${songId}/?list=${encodeURIComponent(slug)}`);

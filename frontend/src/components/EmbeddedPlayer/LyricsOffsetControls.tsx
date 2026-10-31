@@ -1,9 +1,7 @@
 import React from "react";
-import type { LyricsOffsetSaveStatus } from "../../hooks/useLyricsOffset";
 
 interface LyricsOffsetControlsProps {
   offsetMs: number;
-  saveStatus: LyricsOffsetSaveStatus;
   onAdjust: (deltaMs: number) => void;
   onReset: () => void;
 }
@@ -18,7 +16,6 @@ export function formatLyricsOffset(offsetMs: number): string {
 
 const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
   offsetMs,
-  saveStatus,
   onAdjust,
   onReset,
 }) => {
@@ -29,7 +26,7 @@ const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
       <button
         key={deltaMs}
         type="button"
-        className="player-lyrics-offset-button"
+        className="player-lyrics-tool-button"
         onClick={() => onAdjust(deltaMs)}
         title={label}
         aria-label={label}
@@ -41,11 +38,11 @@ const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
   };
 
   return (
-    <div className="player-lyrics-offset" role="group" aria-label="Lyrics timing">
+    <div className="player-lyrics-tool-group" role="group" aria-label="Lyrics timing">
       {EARLIER_STEPS_MS.map(renderStep)}
       <button
         type="button"
-        className="player-lyrics-offset-button player-lyrics-offset-value"
+        className="player-lyrics-tool-button player-lyrics-offset-value"
         onClick={onReset}
         disabled={offsetMs === 0}
         title="Reset lyrics timing"
@@ -54,11 +51,6 @@ const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
         {formatLyricsOffset(offsetMs)}
       </button>
       {LATER_STEPS_MS.map(renderStep)}
-      {saveStatus === "error" && (
-        <span className="player-lyrics-offset-error" role="status">
-          not saved
-        </span>
-      )}
     </div>
   );
 };

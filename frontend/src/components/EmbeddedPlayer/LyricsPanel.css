@@ -28,17 +28,23 @@
   font-weight: 500;
 }
 
-.player-lyrics-offset {
+.player-lyrics-tools {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 4px 12px;
   flex-shrink: 0;
   margin-bottom: 6px;
   font-size: 0.75rem;
 }
 
-.player-lyrics-offset-button {
+.player-lyrics-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-lyrics-tool-button {
   border: 1px solid #626977;
   border-radius: 4px;
   background-color: #474c57;
@@ -48,17 +54,21 @@
   cursor: pointer;
 }
 
+.player-lyrics-tool-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .player-lyrics-offset-value {
   min-width: 4.5em;
   font-variant-numeric: tabular-nums;
 }
 
-.player-lyrics-offset-value:disabled {
-  cursor: default;
-  opacity: 0.6;
+.player-lyrics-saved {
+  color: #a5d6a7;
 }
 
-.player-lyrics-offset-error {
+.player-lyrics-tools-error {
   color: #ffb4a8;
 }
 

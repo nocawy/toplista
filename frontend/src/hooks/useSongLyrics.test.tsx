@@ -1,13 +1,13 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
-import { fetchLyrics, LyricsPayload } from "../api/lyricsService";
+import { act, render, screen } from "@testing-library/react";
+import { fetchSongLyrics, LyricsPayload } from "../api/lyricsService";
 import type { Song } from "../components/Song";
 import { useSongLyrics } from "./useSongLyrics";
 
 jest.mock("../api/lyricsService", () => ({
-  fetchLyrics: jest.fn(),
+  fetchSongLyrics: jest.fn(),
 }));
 
-const mockedFetchLyrics = fetchLyrics as jest.MockedFunction<typeof fetchLyrics>;
+const mockedFetchSongLyrics = fetchSongLyrics as jest.MockedFunction<typeof fetchSongLyrics>;
 
 const baseSong: Song = {
   id: 1,
@@ -30,29 +30,45 @@ const firstLyrics: LyricsPayload = {
   synced: false,
   lines: [],
   plain: "First lyrics",
+  stored: null,
 };
 
+let latest: ReturnType<typeof useSongLyrics>;
+
 function LyricsHarness({ song }: { song: Song | null }) {
-  const { lyrics, status } = useSongLyrics(song, 180);
+  latest = useSongLyrics(song, 180);
   return (
     <>
-      <div data-testid="status">{status}</div>
-      <div>{lyrics?.plain}</div>
+      <div data-testid="status">{latest.status}</div>
+      <div>{latest.lyrics?.plain}</div>
     </>
   );
 }
+
+beforeEach(() => {
+  mockedFetchSongLyrics.mockReset();
+});
+
+test("loads lyrics for the song with the video duration", async () => {
+  mockedFetchSongLyrics.mockResolvedValueOnce(firstLyrics);
+
+  render(<LyricsHarness song={baseSong} />);
+
+  expect(await screen.findByText("First lyrics")).toBeInTheDocument();
+  expect(mockedFetchSongLyrics).toHaveBeenCalledWith(1, 180, expect.any(AbortSignal));
+});
 
 test("does not render the previous song's lyrics while a new song loads", async () => {
   let resolveSecond!: (payload: LyricsPayload) => void;
   const secondRequest = new Promise<LyricsPayload>((resolve) => {
     resolveSecond = resolve;
   });
-  mockedFetchLyrics.mockResolvedValueOnce(firstLyrics);
-  mockedFetchLyrics.mockReturnValueOnce(secondRequest);
+  mockedFetchSongLyrics.mockResolvedValueOnce(firstLyrics);
+  mockedFetchSongLyrics.mockReturnValueOnce(secondRequest);
 
   const { rerender } = render(<LyricsHarness song={baseSong} />);
 
-  await waitFor(() => expect(screen.getByText("First lyrics")).toBeInTheDocument());
+  expect(await screen.findByText("First lyrics")).toBeInTheDocument();
 
   rerender(
     <LyricsHarness
@@ -72,4 +88,28 @@ test("does not render the previous song's lyrics while a new song loads", async 
     resolveSecond({ ...firstLyrics, plain: "Second lyrics" });
     await secondRequest;
   });
+});
+
+test("shows saved lyrics only for the song they were saved for", async () => {
+  mockedFetchSongLyrics.mockResolvedValueOnce(firstLyrics);
+  render(<LyricsHarness song={baseSong} />);
+  await screen.findByText("First lyrics");
+
+  act(() => latest.replaceLyrics(2, { ...firstLyrics, plain: "Other song" }));
+  expect(screen.getByText("First lyrics")).toBeInTheDocument();
+
+  act(() => latest.replaceLyrics(1, { ...firstLyrics, plain: "Saved lyrics" }));
+  expect(screen.getByText("Saved lyrics")).toBeInTheDocument();
+});
+
+test("reload fetches the lyrics again", async () => {
+  mockedFetchSongLyrics.mockResolvedValueOnce(firstLyrics);
+  mockedFetchSongLyrics.mockResolvedValueOnce({ ...firstLyrics, plain: "Live again" });
+  render(<LyricsHarness song={baseSong} />);
+  await screen.findByText("First lyrics");
+
+  act(() => latest.reload());
+
+  expect(await screen.findByText("Live again")).toBeInTheDocument();
+  expect(mockedFetchSongLyrics).toHaveBeenCalledTimes(2);
 });

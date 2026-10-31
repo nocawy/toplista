@@ -83,7 +83,7 @@ const EmbeddedPlayerPanel: React.FC<EmbeddedPlayerPanelProps> = ({
         song={currentSong}
         currentTimeSeconds={currentPlayback.currentTime}
         durationSeconds={currentPlayback.duration}
-        canAdjustOffset={isLoggedIn}
+        canEditLyrics={isLoggedIn}
       />
       <div className="player-queue-controls" aria-label="Playback controls">
         <div

@@ -3,9 +3,7 @@ import LyricsOffsetControls, { formatLyricsOffset } from "./LyricsOffsetControls
 
 test("nudges the lyrics earlier and later", () => {
   const onAdjust = jest.fn();
-  render(
-    <LyricsOffsetControls offsetMs={17_000} saveStatus="idle" onAdjust={onAdjust} onReset={jest.fn()} />
-  );
+  render(<LyricsOffsetControls offsetMs={17_000} onAdjust={onAdjust} onReset={jest.fn()} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Show lyrics 5 s earlier" }));
   fireEvent.click(screen.getByRole("button", { name: "Show lyrics 0.5 s later" }));
@@ -16,24 +14,14 @@ test("nudges the lyrics earlier and later", () => {
 test("resets a non-zero offset", () => {
   const onReset = jest.fn();
   const { rerender } = render(
-    <LyricsOffsetControls offsetMs={0} saveStatus="idle" onAdjust={jest.fn()} onReset={onReset} />
+    <LyricsOffsetControls offsetMs={0} onAdjust={jest.fn()} onReset={onReset} />
   );
   expect(screen.getByRole("button", { name: /Lyrics timing/ })).toBeDisabled();
 
-  rerender(
-    <LyricsOffsetControls offsetMs={-1_500} saveStatus="idle" onAdjust={jest.fn()} onReset={onReset} />
-  );
+  rerender(<LyricsOffsetControls offsetMs={-1_500} onAdjust={jest.fn()} onReset={onReset} />);
   fireEvent.click(screen.getByRole("button", { name: "Lyrics timing −1.5 s, reset" }));
 
   expect(onReset).toHaveBeenCalledTimes(1);
-});
-
-test("tells the user when the offset was not saved", () => {
-  render(
-    <LyricsOffsetControls offsetMs={500} saveStatus="error" onAdjust={jest.fn()} onReset={jest.fn()} />
-  );
-
-  expect(screen.getByRole("status")).toHaveTextContent("not saved");
 });
 
 test("formats offsets with an explicit sign", () => {
