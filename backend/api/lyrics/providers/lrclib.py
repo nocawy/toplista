@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from ..http import ProviderUnavailable, get_json
 from ..lrc import parse_lrc, plain_from_lines
-from ..types import LyricsQuery, LyricsResult
+from ..types import LyricsCandidate, LyricsQuery, LyricsResult
 from .base import LyricProvider
 
 BASE_URL = "https://lrclib.net/api"
@@ -38,6 +38,50 @@ class LrclibProvider(LyricProvider):
             return replace(result, degraded=True)
         return result
 
+    def candidates(self, query: LyricsQuery) -> list[LyricsCandidate]:
+        if not query.title:
+            return []
+
+        found: list[LyricsCandidate] = []
+        failures: list[ProviderUnavailable] = []
+        exact_queries = [query, replace(query, album=None)] if query.album else [query]
+        if query.artist:
+            for exact_query in exact_queries:
+                try:
+                    record = self._get(exact_query)
+                except ProviderUnavailable as exc:
+                    failures.append(exc)
+                    continue
+                if isinstance(record, dict):
+                    found.append(self._to_candidate(record, exact_match=True))
+        try:
+            found.extend(self._to_candidate(record) for record in self._search_records(query))
+        except ProviderUnavailable as exc:
+            failures.append(exc)
+
+        candidates = [candidate for candidate in found if candidate is not None]
+        if failures and not candidates:
+            raise failures[0]
+        if failures:
+            return [replace(candidate, result=replace(candidate.result, degraded=True)) for candidate in candidates]
+        return candidates
+
+    def _to_candidate(self, record: dict, exact_match: bool = False) -> LyricsCandidate | None:
+        result = self._to_result(record)
+        if result is None:
+            return None
+        label = " - ".join(part for part in (record.get("artistName"), record.get("trackName")) if part)
+        if record.get("albumName"):
+            label = f"{label} ({record['albumName']})"
+        duration = record.get("duration")
+        return LyricsCandidate(
+            result=result,
+            source_id=str(record.get("id") or ""),
+            label=label,
+            duration=float(duration) if isinstance(duration, (int, float)) else None,
+            exact_match=exact_match,
+        )
+
     def _get(self, query: LyricsQuery) -> dict | None:
         params = {
             "track_name": query.title,
@@ -52,13 +96,19 @@ class LrclibProvider(LyricProvider):
         return payload if isinstance(payload, dict) else None
 
     def _search(self, query: LyricsQuery) -> dict | None:
+        records = self._search_records(query)
+        if not records:
+            return None
+        return _pick_search_result(records, query.duration)
+
+    def _search_records(self, query: LyricsQuery) -> list[dict]:
         params: dict[str, str] = {"track_name": query.title}
         if query.artist:
             params["artist_name"] = query.artist
         payload = get_json(f"{BASE_URL}/search?{urlencode(params)}")
-        if not isinstance(payload, list) or not payload:
-            return None
-        return _pick_search_result(payload, query.duration)
+        if not isinstance(payload, list):
+            return []
+        return [record for record in payload if isinstance(record, dict)]
 
     def _to_result(self, record: dict) -> LyricsResult | None:
         if record.get("instrumental"):

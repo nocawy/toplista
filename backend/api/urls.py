@@ -8,7 +8,7 @@ from .views import update_song
 from .views import delete_song
 from .views import LoginAPIView
 from .views import song_lookup, youtube_metadata_lookup, RankingList, RankingDetail
-from .lyrics.views import lyrics_lookup, song_lyrics
+from .lyrics.views import lyrics_lookup, song_lyrics, song_lyrics_candidates
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -22,6 +22,7 @@ urlpatterns = [
     path("songs/update/<int:pk>", update_song, name="update_song"),
     path("songs/delete/<int:pk>/", delete_song, name="delete_song"),  # accepts ?list=<slug>
     path("songs/<int:pk>/lyrics/", song_lyrics),
+    path("songs/<int:pk>/lyrics/candidates/", song_lyrics_candidates),
     path("rankings/", RankingList.as_view()),
     path("rankings/<int:pk>/", RankingDetail.as_view()),
     path("login/", LoginAPIView.as_view(), name="api_login"),

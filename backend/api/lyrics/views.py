@@ -5,13 +5,14 @@ import math
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.throttling import SimpleRateThrottle
 
 from ..models import Song, SongLyrics
 from ..youtube_metadata import is_valid_youtube_id
+from .candidates import gather_candidates
 from .service import fetch_lyrics
 from .stored import StoredLyricsSerializer, stored_to_payload
 from .types import LyricsQuery
@@ -125,3 +126,16 @@ def song_lyrics(request, pk):
     except InvalidDuration as exc:
         return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     return Response({**fetch_lyrics(song_lyrics_query(song, duration)), "stored": None})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@throttle_classes([LyricsRateThrottle])
+def song_lyrics_candidates(request, pk):
+    """Every distinct lyrics file the providers offer for a song, best guess first."""
+    song = get_object_or_404(Song, pk=pk)
+    try:
+        duration = _parse_duration(request.GET.get("duration"))
+    except InvalidDuration as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(gather_candidates(song_lyrics_query(song, duration)))

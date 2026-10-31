@@ -27,3 +27,15 @@ class LyricsResult:
     plain: str | None = None
     # A fallback answer; the provider may return a better match once it recovers.
     degraded: bool = False
+
+
+@dataclass(frozen=True)
+class LyricsCandidate:
+    """One lyrics file a provider offers for a query, with what it says about it."""
+
+    result: LyricsResult
+    source_id: str = ""
+    label: str = ""
+    # Length of the recording the provider's record describes, if known.
+    duration: float | None = None
+    exact_match: bool = False

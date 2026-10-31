@@ -75,7 +75,7 @@ def default_providers() -> list[LyricProvider]:
     return providers
 
 
-def cache_key(query: LyricsQuery) -> str:
+def cache_key(query: LyricsQuery, prefix: str = CACHE_PREFIX) -> str:
     duration = str(int(round(query.duration))) if query.duration else ""
     raw = json.dumps(
         [
@@ -88,7 +88,7 @@ def cache_key(query: LyricsQuery) -> str:
         ensure_ascii=False,
         separators=(",", ":"),
     )
-    return CACHE_PREFIX + hashlib.md5(raw.encode("utf-8")).hexdigest()
+    return prefix + hashlib.md5(raw.encode("utf-8")).hexdigest()
 
 
 def fetch_lyrics(query: LyricsQuery, providers: list[LyricProvider] | None = None) -> dict:
