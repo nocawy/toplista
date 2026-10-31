@@ -64,6 +64,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+.player-lyrics-source {
+  min-width: 6.5em;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
 .player-lyrics-saved {
   color: #a5d6a7;
 }

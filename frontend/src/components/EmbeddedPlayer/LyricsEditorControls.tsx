@@ -1,6 +1,7 @@
 import React from "react";
 import type { LyricsEditor } from "../../hooks/useLyricsEditor";
 import LyricsOffsetControls from "./LyricsOffsetControls";
+import LyricsSourceSwitcher from "./LyricsSourceSwitcher";
 
 const STORED_LABELS = {
   manual: { text: "saved", title: "Saved for this song (chosen in the player)" },
@@ -12,6 +13,7 @@ const LyricsEditorControls: React.FC<{ editor: LyricsEditor }> = ({ editor }) =>
 
   return (
     <div className="player-lyrics-tools">
+      <LyricsSourceSwitcher editor={editor} />
       {editor.canAdjustTiming && (
         <LyricsOffsetControls
           offsetMs={editor.offsetMs}
@@ -19,32 +21,34 @@ const LyricsEditorControls: React.FC<{ editor: LyricsEditor }> = ({ editor }) =>
           onReset={editor.resetOffset}
         />
       )}
-      <div className="player-lyrics-tool-group" role="group" aria-label="Saved lyrics">
-        {stored ? (
-          <>
-            <span className="player-lyrics-saved" title={stored.title}>
-              ✓ {stored.text}
-            </span>
+      {(stored || editor.canKeep) && (
+        <div className="player-lyrics-tool-group" role="group" aria-label="Saved lyrics">
+          {stored ? (
+            <>
+              <span className="player-lyrics-saved" title={stored.title}>
+                ✓ {stored.text}
+              </span>
+              <button
+                type="button"
+                className="player-lyrics-tool-button"
+                onClick={editor.forget}
+                title="Forget the saved lyrics and look them up again"
+              >
+                forget
+              </button>
+            </>
+          ) : (
             <button
               type="button"
               className="player-lyrics-tool-button"
-              onClick={editor.forget}
-              title="Forget the saved lyrics and look them up again"
+              onClick={editor.keep}
+              title="Keep these lyrics for this song"
             >
-              forget
+              keep
             </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="player-lyrics-tool-button"
-            onClick={editor.keep}
-            title="Keep these lyrics for this song"
-          >
-            keep
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {editor.saveStatus === "error" && (
         <span className="player-lyrics-tools-error" role="status">
           not saved

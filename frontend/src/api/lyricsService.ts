@@ -18,8 +18,28 @@ export interface LyricsPayload {
   lines: LyricsLine[];
   plain: string | null;
   fingerprint?: string | null;
+  /** Provider record the lyrics came from, when known. */
+  source_id?: string;
   /** Set when these lyrics were chosen and saved for the song. */
   stored?: StoredLyricsInfo | null;
+}
+
+export interface LyricsCandidate extends LyricsPayload {
+  id: string;
+  source_id: string;
+  label: string;
+  providers: string[];
+  durations: number[];
+  records: number;
+  exact_match: boolean;
+  ends_after_video: boolean;
+  version_mismatch: boolean;
+}
+
+export interface LyricsCandidates {
+  candidates: LyricsCandidate[];
+  /** A provider did not answer, so better candidates may exist. */
+  incomplete: boolean;
 }
 
 export interface StoredLyricsInput {
@@ -49,6 +69,16 @@ export const fetchSongLyrics = async (
     throw new Error("Lyrics lookup failed");
   }
   return response.json();
+};
+
+export const fetchLyricsCandidates = async (
+  songId: number,
+  duration: number | null
+): Promise<LyricsCandidates> => {
+  const response = await apiClient.get(`songs/${songId}/lyrics/candidates/`, {
+    params: duration && duration > 0 ? { duration: Math.round(duration) } : {},
+  });
+  return response.data;
 };
 
 export const saveSongLyrics = async (

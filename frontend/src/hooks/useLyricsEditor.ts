@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  fetchLyricsCandidates,
   forgetSongLyrics,
+  LyricsCandidate,
   LyricsPayload,
   saveSongLyrics,
   StoredLyricsInput,
@@ -11,9 +13,11 @@ export const MAX_LYRICS_OFFSET_MS = 5 * 60 * 1000;
 const SAVE_DELAY_MS = 600;
 
 export type LyricsSaveStatus = "idle" | "saving" | "error";
+export type CandidatesStatus = "idle" | "loading" | "ready" | "error";
 
 interface LyricsEditorOptions {
   enabled: boolean;
+  durationSeconds?: number | null;
   onSaved?: (songId: number, payload: LyricsPayload) => void;
   onForgotten?: () => void;
 }
@@ -24,15 +28,27 @@ interface PendingSave {
   timer: number;
 }
 
-function lyricsKey(song: Song | null, lyrics: LyricsPayload | null): string | null {
-  if (!song || !lyrics?.found) return null;
-  return `${song.id}:${lyrics.fingerprint ?? lyrics.provider ?? ""}`;
+interface CandidatesState {
+  songId: number | null;
+  status: CandidatesStatus;
+  list: LyricsCandidate[];
+  incomplete: boolean;
+}
+
+const NO_CANDIDATES: CandidatesState = { songId: null, status: "idle", list: [], incomplete: false };
+
+/** Two payloads with the same identity are the same lyrics file. */
+function lyricsIdentity(lyrics: LyricsPayload | null): string | null {
+  if (!lyrics?.found) return null;
+  if (lyrics.instrumental) return "instrumental";
+  if (lyrics.synced) return `synced:${lyrics.fingerprint ?? ""}`;
+  return `plain:${(lyrics.plain ?? "").replace(/\s+/g, " ").trim()}`;
 }
 
 function toStoredInput(lyrics: LyricsPayload, offsetMs: number): StoredLyricsInput {
   return {
     provider: lyrics.provider ?? "unknown",
-    source_id: lyrics.stored?.source_id ?? "",
+    source_id: lyrics.source_id ?? lyrics.stored?.source_id ?? "",
     instrumental: lyrics.instrumental,
     lines: lyrics.lines,
     plain: lyrics.plain,
@@ -41,26 +57,50 @@ function toStoredInput(lyrics: LyricsPayload, offsetMs: number): StoredLyricsInp
 }
 
 /**
- * Timing and saving for the lyrics shown in the player. Saving stores the
- * shown lyrics for the song together with their offset (positive shows the
- * lines later); stored lyrics bring their offset back next time.
+ * The lyrics shown in the player and how a logged-in user can change them:
+ * browse other candidates, adjust the timing (positive shows lines later),
+ * keep the shown lyrics for the song, or forget the saved ones. Stored lyrics
+ * bring their offset back next time.
  */
 export function useLyricsEditor(
   song: Song | null,
-  lyrics: LyricsPayload | null,
-  { enabled, onSaved, onForgotten }: LyricsEditorOptions
+  loadedLyrics: LyricsPayload | null,
+  { enabled, durationSeconds = null, onSaved, onForgotten }: LyricsEditorOptions
 ) {
-  const key = lyricsKey(song, lyrics);
+  const songId = song?.id ?? null;
+  const [candidatesState, setCandidatesState] = useState<CandidatesState>(NO_CANDIDATES);
+  const [selection, setSelection] = useState<{ songId: number; id: string } | null>(null);
   // Adjustments made in this session win over the loaded offset while saves
   // are pending or in flight.
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [saveStatus, setSaveStatus] = useState<LyricsSaveStatus>("idle");
   const pendingRef = useRef<PendingSave | null>(null);
   const sequenceRef = useRef(0);
+  const pendingStepRef = useRef(0);
   const onSavedRef = useRef(onSaved);
   const onForgottenRef = useRef(onForgotten);
   onSavedRef.current = onSaved;
   onForgottenRef.current = onForgotten;
+
+  const candidates = candidatesState.songId === songId ? candidatesState : NO_CANDIDATES;
+  const loadedIdentity = lyricsIdentity(loadedLyrics);
+  const selected =
+    selection && selection.songId === songId
+      ? candidates.list.find((candidate) => candidate.id === selection.id) ?? null
+      : null;
+  const lyrics: LyricsPayload | null = useMemo(
+    () =>
+      selected
+        ? {
+            ...selected,
+            stored: lyricsIdentity(selected) === loadedIdentity ? loadedLyrics?.stored ?? null : null,
+          }
+        : loadedLyrics,
+    [loadedIdentity, loadedLyrics, selected]
+  );
+  const identity = lyricsIdentity(lyrics);
+  const position = candidates.list.findIndex((candidate) => lyricsIdentity(candidate) === identity);
+  const key = songId !== null && identity !== null ? `${songId}:${identity}` : null;
 
   const offsetMs = lyrics?.synced
     ? key !== null && key in overrides
@@ -83,10 +123,10 @@ export function useLyricsEditor(
   }, []);
 
   const save = useCallback(
-    (songId: number, input: StoredLyricsInput) => {
+    (forSongId: number, input: StoredLyricsInput) => {
       track(
-        saveSongLyrics(songId, input).then((payload) => {
-          onSavedRef.current?.(songId, payload);
+        saveSongLyrics(forSongId, input).then((payload) => {
+          onSavedRef.current?.(forSongId, payload);
         })
       );
     },
@@ -109,6 +149,57 @@ export function useLyricsEditor(
     setSaveStatus("idle");
     return flush;
   }, [key, flush]);
+
+  useEffect(() => {
+    pendingStepRef.current = 0;
+  }, [songId]);
+
+  const select = useCallback(
+    (list: LyricsCandidate[], fromPosition: number, step: number) => {
+      if (songId === null || list.length === 0) return;
+      const start = fromPosition >= 0 ? fromPosition : step > 0 ? -1 : 0;
+      const next = list[(start + step + list.length * 2) % list.length];
+      setSelection(lyricsIdentity(next) === loadedIdentity ? null : { songId, id: next.id });
+    },
+    [loadedIdentity, songId]
+  );
+
+  const showCandidate = useCallback(
+    (step: 1 | -1) => {
+      if (!enabled || songId === null) return;
+      if (candidates.status === "ready") {
+        select(candidates.list, position, step);
+        return;
+      }
+      pendingStepRef.current = step;
+      if (candidates.status === "loading") return;
+
+      const forSongId = songId;
+      setCandidatesState({ songId: forSongId, status: "loading", list: [], incomplete: false });
+      fetchLyricsCandidates(forSongId, durationSeconds)
+        .then(({ candidates: list, incomplete }) => {
+          setCandidatesState((previous) =>
+            previous.songId === forSongId ? { songId: forSongId, status: "ready", list, incomplete } : previous
+          );
+          const pendingStep = pendingStepRef.current;
+          pendingStepRef.current = 0;
+          if (pendingStep !== 0) {
+            const from = list.findIndex((candidate) => lyricsIdentity(candidate) === loadedIdentity);
+            select(list, from, pendingStep);
+          }
+        })
+        .catch((error) => {
+          console.error("Could not load other lyrics:", error);
+          setCandidatesState((previous) =>
+            previous.songId === forSongId ? { ...previous, status: "error" } : previous
+          );
+        });
+    },
+    [candidates, durationSeconds, enabled, loadedIdentity, position, select, songId]
+  );
+
+  const showNextCandidate = useCallback(() => showCandidate(1), [showCandidate]);
+  const showPreviousCandidate = useCallback(() => showCandidate(-1), [showCandidate]);
 
   const adjust = useCallback(
     (deltaMs: number) => {
@@ -142,6 +233,7 @@ export function useLyricsEditor(
     const prefix = `${song.id}:`;
     track(
       forgetSongLyrics(song.id).then(() => {
+        setSelection(null);
         setOverrides((previous) =>
           Object.fromEntries(Object.entries(previous).filter(([entry]) => !entry.startsWith(prefix)))
         );
@@ -154,13 +246,23 @@ export function useLyricsEditor(
     lyrics,
     offsetMs,
     stored: lyrics?.stored ?? null,
-    canEdit: enabled && key !== null,
+    canEdit: enabled && song !== null && loadedLyrics !== null,
+    canKeep: enabled && song !== null && !!lyrics?.found,
     canAdjustTiming: enabled && key !== null && !!lyrics?.synced,
     saveStatus,
     adjust,
     resetOffset,
     keep,
     forget,
+    candidates: {
+      status: candidates.status,
+      total: candidates.list.length,
+      position: position >= 0 ? position + 1 : null,
+      incomplete: candidates.incomplete,
+      current: selected ?? (position >= 0 ? candidates.list[position] : null),
+    },
+    showNextCandidate,
+    showPreviousCandidate,
   };
 }
 

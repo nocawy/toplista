@@ -22,6 +22,7 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({
   const { lyrics: loadedLyrics, status, replaceLyrics, reload } = useSongLyrics(song, durationSeconds);
   const editor = useLyricsEditor(song, loadedLyrics, {
     enabled: canEditLyrics,
+    durationSeconds,
     onSaved: replaceLyrics,
     onForgotten: reload,
   });
