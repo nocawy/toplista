@@ -21,6 +21,33 @@ class Song(models.Model):
         return f"{self.s_yt_id} - {self.s_title}"
 
 
+class SongLyrics(models.Model):
+    """Lyrics chosen for a song; served instead of looking them up again."""
+
+    MANUAL = "manual"
+    VERIFIED = "verified"
+    STATUS_CHOICES = [
+        (MANUAL, "Chosen in the player"),
+        (VERIFIED, "Picked by checking the audio"),
+    ]
+
+    song = models.OneToOneField(
+        Song, on_delete=models.CASCADE, primary_key=True, related_name="stored_lyrics"
+    )
+    provider = models.CharField(max_length=40)
+    source_id = models.CharField(max_length=64, blank=True, default="")
+    instrumental = models.BooleanField(default=False)
+    lines = models.JSONField(default=list, blank=True)
+    plain = models.TextField(blank=True, null=True)
+    # Positive values show the lines later than their timestamps.
+    offset_ms = models.IntegerField(default=0)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=MANUAL)
+    updated_on = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.song} ({self.provider}, {self.status})"
+
+
 class Ranking(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=120, unique=True)

@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.utils.text import slugify
-from .models import Song, Ranking
+from .models import Song, SongLyrics, Ranking
 
 MAX_LYRICS_OFFSET_MS = 5 * 60 * 1000
 
@@ -28,9 +28,10 @@ class SongSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "s_yt_id" in validated_data and validated_data["s_yt_id"] != instance.s_yt_id:
-            # The offset was measured against the previous video's audio.
+            # Offsets and chosen lyrics were matched to the previous video's audio.
             validated_data["s_lyrics_offset_ms"] = 0
             validated_data["s_lyrics_offset_ref"] = ""
+            SongLyrics.objects.filter(song=instance).delete()
         return super().update(instance, validated_data)
 
 
