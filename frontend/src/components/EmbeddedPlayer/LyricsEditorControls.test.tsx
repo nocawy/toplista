@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LyricsCandidate } from "../../api/lyricsService";
 import type { LyricsEditor } from "../../hooks/useLyricsEditor";
 import LyricsEditorControls from "./LyricsEditorControls";
@@ -96,7 +96,9 @@ test("switches between lyrics candidates", () => {
     />
   );
 
-  expect(screen.getByRole("group", { name: "Lyrics source" })).toHaveTextContent("lrclib 2/4 ⚠");
+  const source = screen.getByRole("group", { name: "Lyrics source" });
+  expect(within(source).getByText("lrclib")).toBeInTheDocument();
+  expect(within(source).getByText("2/4 ⚠")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Next lyrics" }));
   fireEvent.click(screen.getByRole("button", { name: "Previous lyrics" }));
   expect(showNextCandidate).toHaveBeenCalledTimes(1);

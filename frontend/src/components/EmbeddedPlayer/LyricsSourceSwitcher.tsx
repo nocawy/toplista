@@ -30,9 +30,9 @@ const LyricsSourceSwitcher: React.FC<{ editor: LyricsEditor }> = ({ editor }) =>
   const source = editor.lyrics?.found ? editor.lyrics.provider : "no lyrics";
   const count =
     candidates.status === "loading"
-      ? " …"
+      ? "…"
       : candidates.status === "ready"
-        ? ` ${candidates.position ?? "–"}/${candidates.total}`
+        ? `${candidates.position ?? "–"}/${candidates.total}`
         : "";
   const hasWarning =
     candidates.status === "error" ||
@@ -43,31 +43,37 @@ const LyricsSourceSwitcher: React.FC<{ editor: LyricsEditor }> = ({ editor }) =>
 
   return (
     <div className="player-lyrics-tool-group" role="group" aria-label="Lyrics source">
-      <button
-        type="button"
-        className="player-lyrics-tool-button"
-        onClick={editor.showPreviousCandidate}
-        disabled={noAlternatives}
-        title="Previous lyrics"
-        aria-label="Previous lyrics"
-      >
-        ‹
-      </button>
+      <div className="player-lyrics-tool-row">
+        <button
+          type="button"
+          className="player-lyrics-tool-button"
+          onClick={editor.showPreviousCandidate}
+          disabled={noAlternatives}
+          title="Previous lyrics"
+          aria-label="Previous lyrics"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          className="player-lyrics-tool-button"
+          onClick={editor.showNextCandidate}
+          disabled={noAlternatives}
+          title="Next lyrics"
+          aria-label="Next lyrics"
+        >
+          ›
+        </button>
+      </div>
       <span className="player-lyrics-source" title={describeLyricsSource(editor)}>
-        {source}
-        {count}
-        {hasWarning && " ⚠"}
+        <span>{source}</span>
+        {(count || hasWarning) && (
+          <span>
+            {count}
+            {hasWarning && " ⚠"}
+          </span>
+        )}
       </span>
-      <button
-        type="button"
-        className="player-lyrics-tool-button"
-        onClick={editor.showNextCandidate}
-        disabled={noAlternatives}
-        title="Next lyrics"
-        aria-label="Next lyrics"
-      >
-        ›
-      </button>
     </div>
   );
 };

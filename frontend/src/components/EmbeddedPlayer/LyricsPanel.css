@@ -10,16 +10,17 @@
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   text-align: left;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   background: rgba(0, 0, 0, 0.18);
 }
 
 .player-current-song {
+  grid-column: 1 / -1;
   font-size: 0.95rem;
   font-weight: 600;
-  flex-shrink: 0;
   margin-bottom: 6px;
 }
 
@@ -28,20 +29,37 @@
   font-weight: 500;
 }
 
+/* A narrow column beside the lyrics: the panel has little width to spare. */
 .player-lyrics-tools {
+  grid-column: 2;
+  grid-row: 2;
+  width: 4.8em;
+  min-height: 0;
+  overflow-y: auto;
+  margin-left: 8px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  flex-shrink: 0;
-  margin-bottom: 6px;
-  font-size: 0.75rem;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  text-align: center;
+  scrollbar-width: none;
 }
 
 .player-lyrics-tool-group {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.player-lyrics-tool-row {
+  display: flex;
+  gap: 2px;
+}
+
+.player-lyrics-tool-row > * {
+  flex: 1;
 }
 
 .player-lyrics-tool-button {
@@ -49,8 +67,9 @@
   border-radius: 4px;
   background-color: #474c57;
   color: white;
-  padding: 1px 6px;
+  padding: 0 2px;
   font: inherit;
+  line-height: 1.5;
   cursor: pointer;
 }
 
@@ -60,20 +79,22 @@
 }
 
 .player-lyrics-offset-value {
-  min-width: 4.5em;
   font-variant-numeric: tabular-nums;
 }
 
 .player-lyrics-source {
-  min-width: 6.5em;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
   color: rgba(255, 255, 255, 0.8);
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
   cursor: help;
 }
 
 .player-lyrics-saved {
   color: #a5d6a7;
+  line-height: 1.25;
 }
 
 .player-lyrics-tools-error {
@@ -81,7 +102,8 @@
 }
 
 .player-lyrics-body {
-  flex: 1;
+  grid-column: 1;
+  grid-row: 2;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;

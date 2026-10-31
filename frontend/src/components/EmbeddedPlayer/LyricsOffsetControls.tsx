@@ -6,12 +6,11 @@ interface LyricsOffsetControlsProps {
   onReset: () => void;
 }
 
-const EARLIER_STEPS_MS = [-5000, -500];
-const LATER_STEPS_MS = [500, 5000];
+const STEP_MS = 500;
 
 export function formatLyricsOffset(offsetMs: number): string {
   const sign = offsetMs > 0 ? "+" : offsetMs < 0 ? "−" : "±";
-  return `${sign}${(Math.abs(offsetMs) / 1000).toFixed(1)} s`;
+  return `${sign}${(Math.abs(offsetMs) / 1000).toFixed(1)}s`;
 }
 
 const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
@@ -24,7 +23,6 @@ const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
     const label = `Show lyrics ${seconds} s ${deltaMs < 0 ? "earlier" : "later"}`;
     return (
       <button
-        key={deltaMs}
         type="button"
         className="player-lyrics-tool-button"
         onClick={() => onAdjust(deltaMs)}
@@ -39,7 +37,7 @@ const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
 
   return (
     <div className="player-lyrics-tool-group" role="group" aria-label="Lyrics timing">
-      {EARLIER_STEPS_MS.map(renderStep)}
+      {renderStep(-STEP_MS)}
       <button
         type="button"
         className="player-lyrics-tool-button player-lyrics-offset-value"
@@ -50,7 +48,7 @@ const LyricsOffsetControls: React.FC<LyricsOffsetControlsProps> = ({
       >
         {formatLyricsOffset(offsetMs)}
       </button>
-      {LATER_STEPS_MS.map(renderStep)}
+      {renderStep(STEP_MS)}
     </div>
   );
 };
