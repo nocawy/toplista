@@ -4,6 +4,8 @@ from django.contrib.auth import authenticate
 from django.utils.text import slugify
 from .models import Song, Ranking
 
+MAX_LYRICS_OFFSET_MS = 5 * 60 * 1000
+
 
 class SongSerializer(serializers.ModelSerializer):
     # r_rank is provided by view annotation (per selected ranking)
@@ -18,6 +20,18 @@ class SongSerializer(serializers.ModelSerializer):
         if len(value) != 11:
             raise serializers.ValidationError("YT ID must be exactly 11 characters long.")
         return value
+
+    def validate_s_lyrics_offset_ms(self, value):
+        if abs(value) > MAX_LYRICS_OFFSET_MS:
+            raise serializers.ValidationError("Lyrics offset must be within 5 minutes.")
+        return value
+
+    def update(self, instance, validated_data):
+        if "s_yt_id" in validated_data and validated_data["s_yt_id"] != instance.s_yt_id:
+            # The offset was measured against the previous video's audio.
+            validated_data["s_lyrics_offset_ms"] = 0
+            validated_data["s_lyrics_offset_ref"] = ""
+        return super().update(instance, validated_data)
 
 
 class RankingSerializer(serializers.ModelSerializer):

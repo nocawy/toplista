@@ -13,7 +13,15 @@ from .types import LyricLine, LyricsQuery, LyricsResult
 
 logger = logging.getLogger(__name__)
 
-CACHE_PREFIX = "lyrics:v1:"
+CACHE_PREFIX = "lyrics:v2:"
+
+
+def lyrics_fingerprint(lines: list[LyricLine]) -> str | None:
+    """Identify one timing of the lyrics, so per-song offsets apply only to it."""
+    if not lines:
+        return None
+    raw = json.dumps([[line.start_ms, line.text] for line in lines], ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
 
 def result_to_payload(result: LyricsResult | None) -> dict:
@@ -25,6 +33,7 @@ def result_to_payload(result: LyricsResult | None) -> dict:
             "synced": False,
             "lines": [],
             "plain": None,
+            "fingerprint": None,
         }
     return {
         "found": True,
@@ -33,6 +42,7 @@ def result_to_payload(result: LyricsResult | None) -> dict:
         "synced": result.synced,
         "lines": [{"start_ms": line.start_ms, "text": line.text} for line in result.lines],
         "plain": result.plain,
+        "fingerprint": lyrics_fingerprint(result.lines) if result.synced else None,
     }
 
 

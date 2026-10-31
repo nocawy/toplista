@@ -9,6 +9,10 @@ class Song(models.Model):
     s_released = models.IntegerField(blank=True, null=True)
     s_discovered = models.CharField(max_length=20, blank=True, null=True)
     s_comment = models.TextField(blank=True, null=True)
+    # Shift for this video's lyrics; positive values show them later. Only valid
+    # for the lyrics whose fingerprint is stored in s_lyrics_offset_ref.
+    s_lyrics_offset_ms = models.IntegerField(default=0)
+    s_lyrics_offset_ref = models.CharField(max_length=16, blank=True, default="")
     # Global timestamps for the song entity
     s_last_updated = models.DateTimeField(auto_now=True)
     s_created_on = models.DateTimeField(auto_now_add=True)
