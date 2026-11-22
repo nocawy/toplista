@@ -12,11 +12,20 @@ When generating commit messages:
 - Use Conventional Commits: `<type>[(scope)]: <subject>`.
 - Scope is optional; include it only when it adds useful context.
 - When used, keep scope short: e.g. `front`, `back`, `api`, `ui`, `ranking`.
-- Subject: imperative mood, <= 72 chars, no trailing period.
-- Body: concise but complete bullets for the important changes.
-- Explain why when the rationale is known.
-- Omit the body only for trivial changes where the subject fully explains the rationale.
-- After completing code changes, suggest a commit message unless a commit was already created.
+- Subject: imperative mood, <= 72 chars, no trailing period; describe the
+  outcome or behavior rather than implementation mechanics.
+- Body: focus on giving a reader clear context and a readable explanation of
+  the change, using whatever format (paragraphs, bullets, or a mix) reads best:
+  - Context / why: what problem, limitation, or user need motivated the change.
+  - What changed: a clear, high-level explanation of the new behavior or
+    approach, without narrating the diff or listing routine implementation
+    details (such as individual refs, props, or test files).
+  - Design choices / constraints (when non-obvious): why this approach was
+    chosen over alternatives and what edge cases it avoids.
+- Omit the body only for trivial changes where the subject alone gives full
+  context.
+- After completing code changes, suggest a commit message unless a commit was
+  already created.
 
 Commit types commonly used in this repo:
 - `feat`: new user-facing functionality
